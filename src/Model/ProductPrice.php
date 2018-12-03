@@ -11,17 +11,15 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model;
 
+use Money\Currency;
+use Money\Money;
+
 class ProductPrice
 {
     /**
-     * @var string
+     * @var Money
      */
-    private $amount;
-
-    /**
-     * @var string
-     */
-    private $currency;
+    private $moneyObject;
 
     /**
      * @var string
@@ -30,23 +28,17 @@ class ProductPrice
 
     public function __construct(string $amount, string $currency, string $formatted)
     {
-        $this->amount = $amount;
-        $this->currency = $currency;
+        $this->moneyObject = new Money($amount, new Currency($currency));
         $this->formatted = $formatted;
     }
 
-    public function getAmount(): string
-    {
-        return $this->amount;
-    }
-
-    public function getCurrency(): string
-    {
-        return $this->currency;
-    }
-
-    public function getFormatted(): string
+    public function __toString()
     {
         return $this->formatted;
+    }
+
+    public function asMoneyObject(): Money
+    {
+        return $this->moneyObject;
     }
 }

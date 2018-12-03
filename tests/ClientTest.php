@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Api;
 
+use Money\Money;
 use OneCart\Api\Client;
 use OneCart\Api\Model\Product;
 use OneCart\Api\Model\ProductPrice;
@@ -95,9 +96,12 @@ class ClientTest extends TestCase
 
         $price1 = $product1->getPrice();
         $this->assertInstanceOf(ProductPrice::class, $price1);
-        $this->assertEquals('1234', $price1->getAmount());
-        $this->assertEquals('PLN', $price1->getCurrency());
-        $this->assertEquals('12,34 zł', $price1->getFormatted());
+        $this->assertEquals('12,34 zł', (string) $price1);
+
+        $moneyPrice1 = $price1->asMoneyObject();
+        $this->assertInstanceOf(Money::class, $moneyPrice1);
+        $this->assertEquals('1234', $moneyPrice1->getAmount());
+        $this->assertEquals('PLN', $moneyPrice1->getCurrency());
 
         /** @var Product $product2 */
         $product2 = $products['product2'];
@@ -110,9 +114,12 @@ class ClientTest extends TestCase
 
         $price2 = $product2->getPrice();
         $this->assertInstanceOf(ProductPrice::class, $price2);
-        $this->assertEquals('45512', $price2->getAmount());
-        $this->assertEquals('PLN', $price2->getCurrency());
-        $this->assertEquals('455,12 zł', $price2->getFormatted());
+        $this->assertEquals('455,12 zł', (string) $price2);
+
+        $moneyPrice2 = $price2->asMoneyObject();
+        $this->assertInstanceOf(Money::class, $moneyPrice2);
+        $this->assertEquals('45512', $moneyPrice2->getAmount());
+        $this->assertEquals('PLN', $moneyPrice2->getCurrency());
     }
 
     /**
