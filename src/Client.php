@@ -41,7 +41,7 @@ class Client
         $this->requestFactory = $requestFactory;
     }
 
-        /**
+    /**
      * @return Generator|ProductStock[]
      */
     public function allStocks(): Generator
@@ -76,7 +76,13 @@ class Client
     {
         $response = $this->httpClient->sendRequest($this->requestFactory->createRequest('GET', $uri));
         if (200 !== $response->getStatusCode()) {
-            return []; // FIX ME exception?
+            throw new RuntimeException(
+                sprintf(
+                    'The request to "%s" has returned an unexpected response code "%s"',
+                    $uri,
+                    $response->getStatusCode()
+                )
+            );
         }
 
         return $this->decodeBody($response);

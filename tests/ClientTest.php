@@ -21,6 +21,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 
 class ClientTest extends TestCase
 {
@@ -41,7 +42,7 @@ class ClientTest extends TestCase
 
     public function testStocks(): void
     {
-        $this->mockRequest('stocks/all', 'stocks.json');
+        $this->mockApiCall('stocks/all', 'stocks.json');
 
         $stocks = [];
         foreach ($this->apiClient->allStocks() as $sellerId => $stock) {
@@ -76,7 +77,7 @@ class ClientTest extends TestCase
 
     public function testProducts(): void
     {
-        $this->mockRequest('products/all', 'products.json');
+        $this->mockApiCall('products/all', 'products.json');
 
         $products = [];
         foreach ($this->apiClient->allProducts() as $sellerId => $product1) {
@@ -114,6 +115,36 @@ class ClientTest extends TestCase
         $this->assertEquals('455,12 zł', $price2->getFormatted());
     }
 
+    /**
+     * @dataProvider failedHttpStatusCodesProvider()
+     */
+    public function testExceptionOnFailedStatus(int $statusCode): void
+    {
+        $response = $this->createMock(ResponseInterface::class);
+        $response->expects($this->exactly(2))->method('getStatusCode')->willReturn($statusCode);
+
+        $this->httpClient->expects($this->once())
+            ->method('sendRequest')
+            ->with($this->mockRequest('products/all'))
+            ->willReturn($response)
+        ;
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            "The request to \"products/all\" has returned an unexpected response code \"{$statusCode}\""
+        );
+
+        foreach ($this->apiClient->allProducts() as $product) {
+            // At least one iteration needs to run in order for the exception to be thrown
+            break;
+        }
+    }
+
+    public function failedHttpStatusCodesProvider(): array
+    {
+        return [[302], [401], [404], [403], [500]];
+    }
+
     protected function setUp(): void
     {
         $this->httpClient = $this->createMock(ClientInterface::class);
@@ -121,15 +152,8 @@ class ClientTest extends TestCase
         $this->apiClient = new Client($this->httpClient, $this->messageFactory);
     }
 
-    private function mockRequest(string $uri, string $mockResponseFilename): void
+    private function mockApiCall(string $uri, string $mockResponseFilename): void
     {
-        $request = $this->createMock(RequestInterface::class);
-        $this->messageFactory->expects($this->once())
-            ->method('createRequest')
-            ->with('GET', $uri)
-            ->willReturn($request)
-        ;
-
         $response = $this->createMock(ResponseInterface::class);
         $response->expects($this->once())->method('getStatusCode')->willReturn(200);
         $response->expects($this->once())
@@ -139,9 +163,21 @@ class ClientTest extends TestCase
 
         $this->httpClient->expects($this->once())
             ->method('sendRequest')
-            ->with($request)
+            ->with($this->mockRequest($uri))
             ->willReturn($response)
         ;
+    }
+
+    private function mockRequest(string $uri): MockObject
+    {
+        $request = $this->createMock(RequestInterface::class);
+        $this->messageFactory->expects($this->once())
+            ->method('createRequest')
+            ->with('GET', $uri)
+            ->willReturn($request)
+        ;
+
+        return $request;
     }
 
     private function getMockFileContents(string $filename): string
