@@ -156,7 +156,12 @@ class ClientTest extends TestCase
     {
         $this->httpClient = $this->createMock(ClientInterface::class);
         $this->messageFactory = $this->createMock(RequestFactoryInterface::class);
-        $this->apiClient = new Client($this->httpClient, $this->messageFactory);
+        $this->apiClient = new Client(
+            $this->httpClient,
+            $this->messageFactory,
+            'api key',
+            'api client id'
+        );
     }
 
     private function mockApiCall(string $uri, string $mockResponseFilename): void
@@ -178,9 +183,14 @@ class ClientTest extends TestCase
     private function mockRequest(string $uri): MockObject
     {
         $request = $this->createMock(RequestInterface::class);
+        $request->expects($this->exactly(2))
+            ->method('withHeader')
+            ->withConsecutive(['X-API-Key', 'api key'], ['X-Client-Id', 'api client id'])
+            ->willReturnSelf()
+        ;
         $this->messageFactory->expects($this->once())
             ->method('createRequest')
-            ->with('GET', $uri)
+            ->with('GET', sprintf('https://api.1cart.eu/v1/%s', $uri))
             ->willReturn($request)
         ;
 

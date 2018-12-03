@@ -28,15 +28,12 @@ First, run this command to add the neccessary libraries:
 composer require php-http/guzzle6-adapter zendframework/zend-diactoros
 ```
 
-The HTTP client will need three SDK-specific parameters in order to be able to connect with the API:
+The HTTP client will need two SDK-specific parameters in order to be able to connect with the API:
 1. Your 1cart seller's API key.
 2. Your 1cart seller's API client ID.
-3. The API URI, which is provided through a public constant of the SDK client.
-Always make sure to use the class constant, because otherwise you may end up with
-responses incompatibile with the currently used client.
 
-Instructions on how to obtain parameters 1 and 2 can be found [here](api_keys.md).
-Once you have these, you can create the client like this:
+Instructions on how to obtain these parameters can be found [here](api_keys.md).
+Once you have them, you can create the client like this:
 
 ```php
 use Http\Adapter\Guzzle6\Client as GuzzleAdapter;
@@ -44,17 +41,19 @@ use OneCart\Api\Client as OneCartClient;
 use Zend\Diactoros\RequestFactory;
 
 $httpClient = GuzzleAdapter::createWithConfig([
-    'base_uri' => OneCartClient::CURRENT_VERSION_API_URI,
     'timeout'  => 2.0,
     'headers' => [
         'User-Agent' => '1cart API Client',
-        'Accept' => 'application/json',
-        'X-API-Key' => 'insert your API key here',
-        'X-Client-Id' => 'insert your API client ID here'
-    ],
+        'Accept' => 'application/json'
+    ]
 ])
 
-$apiClient = new OneCartClient($httpClient, new RequestFactory());
+$apiClient = new OneCartClient(
+    $httpClient,
+    new RequestFactory(),
+    'insert your API key here',
+    'insert your API client ID here'
+);
 ```
 
 And that is it! Now you can [use](usage.md) your client to communicate with the API.

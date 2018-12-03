@@ -23,7 +23,7 @@ use RuntimeException;
 
 class Client
 {
-    public const CURRENT_VERSION_API_URI = 'https://api.1cart.eu/v1/';
+    private const CURRENT_VERSION_API_URI = 'https://api.1cart.eu/v1';
 
     /**
      * @var ClientInterface
@@ -35,10 +35,26 @@ class Client
      */
     private $requestFactory;
 
-    public function __construct(ClientInterface $httpClient, RequestFactoryInterface $requestFactory)
-    {
+    /**
+     * @var string
+     */
+    private $apiKey;
+
+    /**
+     * @var string
+     */
+    private $apiClientId;
+
+    public function __construct(
+        ClientInterface $httpClient,
+        RequestFactoryInterface $requestFactory,
+        string $apiKey,
+        string $apiClientId
+    ) {
         $this->httpClient = $httpClient;
         $this->requestFactory = $requestFactory;
+        $this->apiKey = $apiKey;
+        $this->apiClientId = $apiClientId;
     }
 
     /**
@@ -74,7 +90,12 @@ class Client
 
     private function parseResponseForQuery(string $uri): array
     {
-        $response = $this->httpClient->sendRequest($this->requestFactory->createRequest('GET', $uri));
+        $request = $this->requestFactory->createRequest('GET', $this->prependUri($uri))
+            ->withHeader('X-API-Key', $this->apiKey)
+            ->withHeader('X-Client-Id', $this->apiClientId)
+        ;
+
+        $response = $this->httpClient->sendRequest($request);
         if (200 !== $response->getStatusCode()) {
             throw new RuntimeException(
                 sprintf(
@@ -105,5 +126,10 @@ class Client
         }
 
         return $data;
+    }
+
+    private function prependUri(string $uri): string
+    {
+        return sprintf('%s/%s', self::CURRENT_VERSION_API_URI, $uri);
     }
 }
