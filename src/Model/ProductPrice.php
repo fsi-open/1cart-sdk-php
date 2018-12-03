@@ -14,7 +14,7 @@ namespace OneCart\Api\Model;
 use Money\Currency;
 use Money\Money;
 
-class ProductPrice
+final class ProductPrice
 {
     /**
      * @var Money

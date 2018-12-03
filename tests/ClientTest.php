@@ -24,7 +24,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 
-class ClientTest extends TestCase
+final class ClientTest extends TestCase
 {
     /**
      * @var MockObject|ClientInterface

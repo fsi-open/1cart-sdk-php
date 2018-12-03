@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model;
 
-class Product
+final class Product
 {
     /**
      * @var string
