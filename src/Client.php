@@ -90,7 +90,10 @@ class Client
 
     private function parseResponseForQuery(string $uri): array
     {
-        $request = $this->requestFactory->createRequest('GET', $this->prependUri($uri))
+        $request = $this->requestFactory
+            ->createRequest('GET', $this->prependUri($uri))
+            ->withHeader('User-Agent', '1cart API Client')
+            ->withHeader('Accept', 'application/json')
             ->withHeader('X-API-Key', $this->apiKey)
             ->withHeader('X-Client-Id', $this->apiClientId)
         ;

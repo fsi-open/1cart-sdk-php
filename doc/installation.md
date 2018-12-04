@@ -40,16 +40,8 @@ use Http\Adapter\Guzzle6\Client as GuzzleAdapter;
 use OneCart\Api\Client as OneCartClient;
 use Zend\Diactoros\RequestFactory;
 
-$httpClient = GuzzleAdapter::createWithConfig([
-    'timeout'  => 2.0,
-    'headers' => [
-        'User-Agent' => '1cart API Client',
-        'Accept' => 'application/json'
-    ]
-])
-
 $apiClient = new OneCartClient(
-    $httpClient,
+    GuzzleAdapter::createWithConfig(['timeout'  => 2.0]), // the timeout parameter is just an example
     new RequestFactory(),
     'insert your API key here',
     'insert your API client ID here'

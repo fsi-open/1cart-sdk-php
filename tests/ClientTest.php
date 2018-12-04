@@ -183,9 +183,14 @@ final class ClientTest extends TestCase
     private function mockRequest(string $uri): MockObject
     {
         $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->exactly(2))
+        $request->expects($this->exactly(4))
             ->method('withHeader')
-            ->withConsecutive(['X-API-Key', 'api key'], ['X-Client-Id', 'api client id'])
+            ->withConsecutive(
+                ['User-Agent', '1cart API Client'],
+                ['Accept', 'application/json'],
+                ['X-API-Key', 'api key'],
+                ['X-Client-Id', 'api client id']
+            )
             ->willReturnSelf()
         ;
         $this->messageFactory->expects($this->once())
