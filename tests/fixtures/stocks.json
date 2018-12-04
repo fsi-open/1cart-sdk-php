@@ -1,0 +1,22 @@
+[
+  {
+    "seller_id": "product1",
+    "available_quantity": 1
+  },
+  {
+    "seller_id": "product2",
+    "available_quantity": 2
+  },
+  {
+    "seller_id": "product3",
+    "available_quantity": 3
+  },
+  {
+    "seller_id": "product4",
+    "available_quantity": 4
+  },
+  {
+    "seller_id": "product5",
+    "available_quantity": 5
+  }
+]
