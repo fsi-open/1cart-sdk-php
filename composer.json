@@ -16,16 +16,21 @@
         }
     ],
     "require": {
-        "php": "^7.1",
-        "moneyphp/money": "^3.1",
+        "php": "^7.4|^8.0",
+        "ext-json": "*",
+        "commerceguys/enum": "^1.0",
+        "moneyphp/money": "^3.1||^4.0",
         "psr/http-client": "^1.0",
         "psr/http-factory": "^1.0",
-        "psr/http-message": "^1.0"
+        "psr/http-message": "^1.0",
+        "ramsey/uuid": "^4.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "^7.4",
-        "phpstan/phpstan": "^0.10",
-        "squizlabs/php_codesniffer": "^3.0"
+        "laminas/laminas-diactoros": "^2.8",
+        "phpstan/phpstan": "^1.0",
+        "phpstan/phpstan-phpunit": "^1.0",
+        "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "^3.6"
     },
     "config": {
         "bin-dir": "vendor/bin",

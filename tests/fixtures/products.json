@@ -1,26 +1,49 @@
 [
   {
-    "id": "198ab331-bd02-4323-ad43-5928130f9697",
-    "seller_id": "product1",
-    "short_code_uri": "https://1ct.eu/MWm",
-    "disabled": true,
+    "name": "Yellow T-Shirt XXL",
+    "page_uri": "https://example.com/product",
+    "image_thumbnail": "https://onecart-public.s3.atman.pl/web-image/05f/61b/def/c0c4dc181ee9c6aefb1b035/product.png",
     "price": {
       "amount": "1234",
       "currency": "PLN",
       "formatted": "12,34 zł"
     },
-    "tax_rate": 23
+    "tax_rate": 23,
+    "properties": {
+      "type": "digital-uri",
+      "uri": "https://www.youtube.com/watch?v=aVeaUrJpwGg"
+    },
+    "extensions": {
+      "eu_vat_exemption": {
+        "vat_exemption": "subject"
+      },
+      "eu_return_rights_forfeit": {
+        "forfeit_required": false
+      },
+      "pl_vat_gtu_code": {
+        "vat_gtu_code": null
+      }
+    },
+    "id": "198ab331-bd02-4323-ad43-5928130f9697",
+    "seller_id": "product1",
+    "short_code_uri": "https://1ct.eu/MWm",
+    "disabled": false,
+    "suppliers": [
+      "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+    ]
   },
   {
-    "id": "0c8ec1f9-f2b7-42f3-94db-08f6a9a4a35a",
-    "seller_id": "product2",
-    "short_code_uri": "https://1ct.eu/ZWc",
-    "disabled": false,
+    "name": "Red T-Shirt XS",
     "price": {
       "amount": "45512",
       "currency": "PLN",
       "formatted": "455,12 zł"
     },
-    "tax_rate": 23
+    "tax_rate": 23,
+    "id": "0c8ec1f9-f2b7-42f3-94db-08f6a9a4a35a",
+    "seller_id": "product2",
+    "short_code_uri": "https://1ct.eu/ZWc",
+    "disabled": true,
+    "suppliers": []
   }
 ]

@@ -16,23 +16,21 @@ use Money\Money;
 
 final class ProductPrice
 {
-    /**
-     * @var Money
-     */
-    private $moneyObject;
+    private Money $moneyObject;
+    private string $formatted;
 
     /**
-     * @var string
+     * @param numeric-string $amount
+     * @param non-empty-string $currency
+     * @param string $formatted
      */
-    private $formatted;
-
     public function __construct(string $amount, string $currency, string $formatted)
     {
         $this->moneyObject = new Money($amount, new Currency($currency));
         $this->formatted = $formatted;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->formatted;
     }

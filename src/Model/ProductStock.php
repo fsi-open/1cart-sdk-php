@@ -13,25 +13,18 @@ namespace OneCart\Api\Model;
 
 final class ProductStock
 {
-    /**
-     * @var string
-     */
-    private $foreignId;
-
-    /**
-     * @var int
-     */
-    private $availableQuantity;
+    private string $sellerId;
+    private int $availableQuantity;
 
     public function __construct(string $foreignId, int $availableQuantity)
     {
-        $this->foreignId = $foreignId;
+        $this->sellerId = $foreignId;
         $this->availableQuantity = $availableQuantity;
     }
 
-    public function getForeignId(): string
+    public function getSellerId(): string
     {
-        return $this->foreignId;
+        return $this->sellerId;
     }
 
     public function getAvailableQuantity(): int
