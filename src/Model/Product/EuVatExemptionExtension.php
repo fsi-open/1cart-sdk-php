@@ -9,7 +9,10 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Product;
+
+use OneCart\Api\Model\Product\EuVatExemption;
+use OneCart\Api\Model\Product\ProductExtension;
 
 final class EuVatExemptionExtension implements ProductExtension
 {

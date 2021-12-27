@@ -12,16 +12,17 @@ declare(strict_types=1);
 namespace OneCart\Api;
 
 use Generator;
-use OneCart\Api\Model\DigitalUriProperties;
+use OneCart\Api\Model\Product\DigitalUriProperties;
 use OneCart\Api\Model\Dimensions;
-use OneCart\Api\Model\EuReturnRightsForfeitExtension;
-use OneCart\Api\Model\EuVatExemptionExtension;
-use OneCart\Api\Model\PhysicalProperties;
-use OneCart\Api\Model\PlVatGTUExtension;
-use OneCart\Api\Model\Product;
-use OneCart\Api\Model\ProductExtension;
-use OneCart\Api\Model\ProductPrice;
-use OneCart\Api\Model\ProductProperties;
+use OneCart\Api\Model\Product\EuReturnRightsForfeitExtension;
+use OneCart\Api\Model\Product\EuVatExemptionExtension;
+use OneCart\Api\Model\Product\PhysicalProperties;
+use OneCart\Api\Model\Product\PlVatGTUExtension;
+use OneCart\Api\Model\Product\Product;
+use OneCart\Api\Model\Product\ProductExtension;
+use OneCart\Api\Model\FormattedMoney;
+use OneCart\Api\Model\Product\ProductProperties;
+use OneCart\Api\Model\Product\ProductVersion;
 use OneCart\Api\Model\ProductStock;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -35,6 +36,7 @@ use RuntimeException;
 
 use function array_key_exists;
 use function array_keys;
+use function array_map;
 use function array_reduce;
 use function json_encode;
 
@@ -174,20 +176,22 @@ class Client
         return new Product(
             Uuid::fromString($productData['id']),
             $productData['seller_id'],
-            $productData['name'],
-            $productData['disabled'],
-            $pageUri,
-            $imageThumbnailUri,
             $this->uriFactory->createUri($productData['short_code_uri']),
-            new ProductPrice(
-                $productData['price']['amount'],
-                $productData['price']['currency'],
-                $productData['price']['formatted']
-            ),
-            $productData['tax_rate'],
+            $productData['disabled'],
             array_map(static fn(string $uuid): UuidInterface => Uuid::fromString($uuid), $productData['suppliers']),
-            $this->parseProductProperties($productData['properties'] ?? null),
-            $this->parseProductExtensions($productData['extensions'] ?? [])
+            new ProductVersion(
+                $productData['name'],
+                $pageUri,
+                $imageThumbnailUri,
+                new FormattedMoney(
+                    $productData['price']['amount'],
+                    $productData['price']['currency'],
+                    $productData['price']['formatted']
+                ),
+                $productData['tax_rate'],
+                $this->parseProductProperties($productData['properties'] ?? null),
+                $this->parseProductExtensions($productData['extensions'] ?? [])
+            ),
         );
     }
 

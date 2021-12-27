@@ -9,8 +9,9 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Product;
 
+use OneCart\Api\Model\Product\ProductProperties;
 use Psr\Http\Message\UriInterface;
 
 final class DigitalUriProperties implements ProductProperties

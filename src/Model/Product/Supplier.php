@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Product;
 
 use Ramsey\Uuid\UuidInterface;
 

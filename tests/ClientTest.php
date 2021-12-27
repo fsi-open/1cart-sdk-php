@@ -15,13 +15,13 @@ use Laminas\Diactoros\StreamFactory;
 use Laminas\Diactoros\UriFactory;
 use Money\Money;
 use OneCart\Api\Client;
-use OneCart\Api\Model\DigitalUriProperties;
-use OneCart\Api\Model\EuReturnRightsForfeitExtension;
-use OneCart\Api\Model\EuVatExemption;
-use OneCart\Api\Model\EuVatExemptionExtension;
-use OneCart\Api\Model\PlVatGTUExtension;
-use OneCart\Api\Model\Product;
-use OneCart\Api\Model\ProductPrice;
+use OneCart\Api\Model\Product\DigitalUriProperties;
+use OneCart\Api\Model\Product\EuReturnRightsForfeitExtension;
+use OneCart\Api\Model\Product\EuVatExemption;
+use OneCart\Api\Model\Product\EuVatExemptionExtension;
+use OneCart\Api\Model\Product\PlVatGTUExtension;
+use OneCart\Api\Model\Product\Product;
+use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\ProductStock;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -136,7 +136,7 @@ final class ClientTest extends TestCase
         );
 
         $price1 = $product1->getPrice();
-        self::assertInstanceOf(ProductPrice::class, $price1);
+        self::assertInstanceOf(FormattedMoney::class, $price1);
         self::assertEquals('12,34 zł', (string) $price1);
 
         $moneyPrice1 = $price1->asMoneyObject();
@@ -154,7 +154,7 @@ final class ClientTest extends TestCase
         self::assertEquals(23, $product2->getTax());
 
         $price2 = $product2->getPrice();
-        self::assertInstanceOf(ProductPrice::class, $price2);
+        self::assertInstanceOf(FormattedMoney::class, $price2);
         self::assertEquals('455,12 zł', (string) $price2);
 
         $moneyPrice2 = $price2->asMoneyObject();
@@ -182,7 +182,7 @@ final class ClientTest extends TestCase
         self::assertEquals(23, $product1->getTax());
 
         $price1 = $product1->getPrice();
-        self::assertInstanceOf(ProductPrice::class, $price1);
+        self::assertInstanceOf(FormattedMoney::class, $price1);
         self::assertEquals('12,34 zł', (string) $price1);
 
         $moneyPrice1 = $price1->asMoneyObject();
@@ -227,7 +227,7 @@ final class ClientTest extends TestCase
         );
 
         $price2 = $product2->getPrice();
-        self::assertInstanceOf(ProductPrice::class, $price2);
+        self::assertInstanceOf(FormattedMoney::class, $price2);
         self::assertEquals('455,12 zł', (string) $price2);
 
         $moneyPrice2 = $price2->asMoneyObject();

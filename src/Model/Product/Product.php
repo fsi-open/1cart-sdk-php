@@ -9,8 +9,9 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Product;
 
+use OneCart\Api\Model\FormattedMoney;
 use Psr\Http\Message\UriInterface;
 use Ramsey\Uuid\UuidInterface;
 
@@ -18,62 +19,36 @@ final class Product
 {
     private UuidInterface $id;
     private string $sellerId;
-    private string $name;
-    private bool $disabled;
-    private ?UriInterface $pageUri;
-    private ?UriInterface $imageThumbnailUri;
     private UriInterface $shortCodeUri;
-    private ProductPrice $price;
-    private float $tax;
+    private bool $disabled;
     /**
      * @var array<UuidInterface>
      */
     private array $suppliersIds;
-    private ?ProductProperties $properties;
-    /**
-     * @var array<ProductExtension>
-     */
-    private array $extensions;
+    private ProductVersion $version;
 
     /**
      * @param UuidInterface $id
      * @param string $sellerId
-     * @param bool $disabled
-     * @param UriInterface|null $pageUri
-     * @param UriInterface|null $imageThumbnailUri
      * @param UriInterface $shortCodeUri
-     * @param ProductPrice $price
-     * @param float $tax
+     * @param bool $disabled
      * @param array<UuidInterface> $suppliersIds
-     * @param ProductProperties|null $properties
-     * @param array<ProductExtension> $extensions
+     * @param ProductVersion $version
      */
     public function __construct(
         UuidInterface $id,
         string $sellerId,
-        string $name,
-        bool $disabled,
-        ?UriInterface $pageUri,
-        ?UriInterface $imageThumbnailUri,
         UriInterface $shortCodeUri,
-        ProductPrice $price,
-        float $tax,
+        bool $disabled,
         array $suppliersIds,
-        ?ProductProperties $properties,
-        array $extensions
+        ProductVersion $version
     ) {
         $this->id = $id;
         $this->sellerId = $sellerId;
-        $this->name = $name;
         $this->disabled = $disabled;
-        $this->pageUri = $pageUri;
-        $this->imageThumbnailUri = $imageThumbnailUri;
-        $this->shortCodeUri = $shortCodeUri;
-        $this->price = $price;
-        $this->tax = $tax;
         $this->suppliersIds = $suppliersIds;
-        $this->properties = $properties;
-        $this->extensions = $extensions;
+        $this->version = $version;
+        $this->shortCodeUri = $shortCodeUri;
     }
 
     public function getId(): UuidInterface
@@ -86,9 +61,14 @@ final class Product
         return $this->sellerId;
     }
 
+    public function getShortCodeUri(): UriInterface
+    {
+        return $this->shortCodeUri;
+    }
+
     public function getName(): string
     {
-        return $this->name;
+        return $this->version->getName();
     }
 
     public function isDisabled(): bool
@@ -98,27 +78,22 @@ final class Product
 
     public function getPageUri(): ?UriInterface
     {
-        return $this->pageUri;
+        return $this->version->getPageUri();
     }
 
     public function getImageThumbnailUri(): ?UriInterface
     {
-        return $this->imageThumbnailUri;
+        return $this->version->getImageThumbnailUri();
     }
 
-    public function getShortCodeUri(): UriInterface
+    public function getPrice(): FormattedMoney
     {
-        return $this->shortCodeUri;
-    }
-
-    public function getPrice(): ProductPrice
-    {
-        return $this->price;
+        return $this->version->getPrice();
     }
 
     public function getTax(): float
     {
-        return $this->tax;
+        return $this->version->getTax();
     }
 
     /**
@@ -131,7 +106,7 @@ final class Product
 
     public function getProperties(): ?ProductProperties
     {
-        return $this->properties;
+        return $this->version->getProperties();
     }
 
     /**
@@ -139,6 +114,6 @@ final class Product
      */
     public function getExtensions(): array
     {
-        return $this->extensions;
+        return $this->version->getExtensions();
     }
 }

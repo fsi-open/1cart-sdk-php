@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * (c) FSi sp. z o.o. <info@fsi.pl>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
+namespace OneCart\Api\Model\Shipping;
+
+use DateTimeImmutable;
+use OneCart\Api\Model\FormattedMoney;
+use OneCart\Api\Model\PersonalAddress;
+use Ramsey\Uuid\UuidInterface;
+
+final class SelfDistributionShipment implements Shipment
+{
+    use ShipmentImplementation;
+
+    private PersonalAddress $recipient;
+    private string $pointName;
+
+    /**
+     * @param UuidInterface $id
+     * @param DateTimeImmutable $createdAt
+     * @param string $description
+     * @param array<int,string> $productIds
+     * @param FormattedMoney $price
+     * @param FormattedMoney|null $codValue
+     * @param DateTimeImmutable|null $preparedAt
+     * @param DateTimeImmutable|null $deliveredAt
+     * @param DateTimeImmutable|null $cancelledAt
+     * @param PersonalAddress $recipient
+     * @param string $pointName
+     */
+    public function __construct(
+        UuidInterface $id,
+        DateTimeImmutable $createdAt,
+        string $description,
+        array $productIds,
+        FormattedMoney $price,
+        ?FormattedMoney $codValue,
+        ?DateTimeImmutable $preparedAt,
+        ?DateTimeImmutable $deliveredAt,
+        ?DateTimeImmutable $cancelledAt,
+        PersonalAddress $recipient,
+        string $pointName
+    ) {
+        $this->construct(
+            $id,
+            $createdAt,
+            $description,
+            $productIds,
+            $price,
+            $codValue,
+            $preparedAt,
+            $deliveredAt,
+            $cancelledAt
+        );
+
+        $this->recipient = $recipient;
+        $this->pointName = $pointName;
+    }
+
+    public function getRecipient(): PersonalAddress
+    {
+        return $this->recipient;
+    }
+
+    public function getPointName(): string
+    {
+        return $this->pointName;
+    }
+}
