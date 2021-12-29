@@ -25,17 +25,13 @@ final class InvoiceData
      * @param array<string,mixed> $data
      * @return static
      */
-    public static function fromData(?array $data): ?self
+    public static function fromData(?array $data): self
     {
-        if (null === $data) {
-            return null;
-        }
-
         return new self(
             $data['given_name'] ?? '',
             $data['family_name'] ?? '',
             $data['organization'] ?? null,
-            (null !== ($data['tax_id']['vat_id'] ?? null)) ? new TaxId($data['tax_id']['vat_id']) : null,
+            (null !== ($data['tax_id']['vat_id'] ?? null)) ? new TaxId($data['tax_id']['vat_id'] ?? '') : null,
             Address::fromData($data['address'] ?? [])
         );
     }

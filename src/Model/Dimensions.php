@@ -17,6 +17,19 @@ final class Dimensions
     private int $width;
     private int $height;
 
+    /**
+     * @param array<string,int> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            $data['length'],
+            $data['width'],
+            $data['height']
+        );
+    }
+
     public function __construct(int $length, int $width, int $height)
     {
         $this->length = $length;

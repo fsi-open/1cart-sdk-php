@@ -13,6 +13,7 @@ namespace OneCart\Api\Model\Order;
 
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\Product\ProductVersion;
+use Psr\Http\Message\UriFactoryInterface;
 
 final class OrderItem
 {
@@ -21,6 +22,21 @@ final class OrderItem
     private int $quantity;
     private FormattedMoney $total;
     private FormattedMoney $totalWithoutDiscount;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data, UriFactoryInterface $uriFactory): self
+    {
+        return new self(
+            $data['product']['seller_id'] ?? '',
+            ProductVersion::fromData($data['product'] ?? [], $uriFactory),
+            $data['quantity'] ?? 0,
+            FormattedMoney::fromData($data['total'] ?? []),
+            FormattedMoney::fromData($data['total_without_discount'])
+        );
+    }
 
     public function __construct(
         string $sellerId,

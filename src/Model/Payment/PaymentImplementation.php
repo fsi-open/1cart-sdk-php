@@ -47,4 +47,18 @@ trait PaymentImplementation
     {
         return $this->cancelledAt;
     }
+
+    private function construct(
+        UuidInterface $id,
+        DateTimeImmutable $createdAt,
+        FormattedMoney $value,
+        ?DateTimeImmutable $completedAt,
+        ?DateTimeImmutable $cancelledAt
+    ): void {
+        $this->id = $id;
+        $this->createdAt = $createdAt;
+        $this->value = $value;
+        $this->completedAt = $completedAt;
+        $this->cancelledAt = $cancelledAt;
+    }
 }

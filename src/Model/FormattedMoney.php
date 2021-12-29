@@ -20,6 +20,15 @@ final class FormattedMoney
     private string $formatted;
 
     /**
+     * @param array<array-key,mixed> $data
+     * @return FormattedMoney
+     */
+    public static function fromData(array $data): FormattedMoney
+    {
+        return new FormattedMoney($data['amount'] ?? '', $data['currency'] ?? '', $data['formatted'] ?? '');
+    }
+
+    /**
      * @param numeric-string $amount
      * @param non-empty-string $currency
      * @param string $formatted

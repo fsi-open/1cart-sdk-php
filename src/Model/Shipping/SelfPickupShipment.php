@@ -13,6 +13,7 @@ namespace OneCart\Api\Model\Shipping;
 
 use DateTimeImmutable;
 use OneCart\Api\Model\FormattedMoney;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final class SelfPickupShipment implements Shipment
@@ -20,6 +21,26 @@ final class SelfPickupShipment implements Shipment
     use ShipmentImplementation;
 
     private string $pointName;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            Uuid::fromString($data['id']),
+            new DateTimeImmutable($data['created_at']),
+            $data['description'],
+            $data['items'],
+            FormattedMoney::fromData($data['price'] ?? []),
+            (null !== ($data['cod_price'] ?? null)) ? FormattedMoney::fromData($data['cod_price']) : null,
+            (null !== ($data['prepared_at'] ?? null)) ? new DateTimeImmutable($data['prepared_at']) : null,
+            (null !== ($data['delivered_at'] ?? null)) ? new DateTimeImmutable($data['delivered_at']) : null,
+            (null !== ($data['cancelled_at'] ?? null)) ? new DateTimeImmutable($data['cancelled_at']) : null,
+            $data['self_pickup_point_name'] ?? ''
+        );
+    }
 
     /**
      * @param UuidInterface $id

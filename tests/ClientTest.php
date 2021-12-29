@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Api;
 
+use DateTimeImmutable;
 use DateTimeInterface;
 use Laminas\Diactoros\StreamFactory;
 use Laminas\Diactoros\UriFactory;
@@ -19,14 +20,19 @@ use OneCart\Api\Client;
 use OneCart\Api\Model\Address;
 use OneCart\Api\Model\InvoiceData;
 use OneCart\Api\Model\Order\Order;
+use OneCart\Api\Model\Order\OrderDetails;
+use OneCart\Api\Model\Order\OrderItem;
+use OneCart\Api\Model\Payment\BlueMediaPayment;
 use OneCart\Api\Model\Product\DigitalUriProperties;
 use OneCart\Api\Model\Product\EuReturnRightsForfeitExtension;
 use OneCart\Api\Model\Product\EuVatExemption;
 use OneCart\Api\Model\Product\EuVatExemptionExtension;
+use OneCart\Api\Model\Product\PhysicalProperties;
 use OneCart\Api\Model\Product\PlVatGTUExtension;
 use OneCart\Api\Model\Product\Product;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\ProductStock;
+use OneCart\Api\Model\Shipping\FurgonetkaDpdShipment;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
@@ -157,6 +163,213 @@ final class ClientTest extends TestCase
         self::assertNull($order2->getComments());
         self::assertNull($order2->getContactPerson());
         self::assertNull($order2->getInvoiceData());
+    }
+
+    public function testOrderDetails(): void
+    {
+        $this->mockApiCall('orders', 'order-details.json', 'post');
+
+        $orders = iterator_to_array($this->apiClient->ordersDetails(['3GN-VAV-JUA-5V5-B5P']));
+
+        $orderDetails = $orders['3GN-VAV-JUA-5V5-B5P'];
+        self::assertInstanceOf(OrderDetails::class, $orderDetails);
+        self::assertEquals('baf976f5-befc-45c8-b3fe-610395a00335', $orderDetails->getOrder()->getId());
+        self::assertEquals(
+            '2021-12-16T15:33:33+00:00',
+            $orderDetails->getOrder()->getCreatedAt()->format(DateTimeInterface::RFC3339)
+        );
+        self::assertEquals('test@example.org', $orderDetails->getOrder()->getCustomer());
+        self::assertNull($orderDetails->getOrder()->getCancelledAt());
+        self::assertEquals('blue_media', $orderDetails->getOrder()->getPaymentType());
+        self::assertEquals('furgonetka-dpd', $orderDetails->getOrder()->getShippingType());
+        $total = $orderDetails->getOrder()->getTotal();
+        self::assertInstanceOf(FormattedMoney::class, $total);
+        self::assertEquals('239,00 zł', (string) $total);
+        $totalWithShipping = $orderDetails->getOrder()->getTotalWithShipping();
+        self::assertInstanceOf(FormattedMoney::class, $totalWithShipping);
+        self::assertEquals('301,85 zł', (string) $totalWithShipping);
+        $totalWithShippingWithoutDiscount = $orderDetails->getOrder()->getTotalWithShippingWithoutDiscount();
+        self::assertInstanceOf(FormattedMoney::class, $totalWithShippingWithoutDiscount);
+        self::assertEquals('301,85 zł', (string) $totalWithShippingWithoutDiscount);
+        self::assertEquals('completed', $orderDetails->getOrder()->getPaymentState());
+        self::assertEquals('partially_delivered', $orderDetails->getOrder()->getShippingState());
+        self::assertNull($orderDetails->getOrder()->getComments());
+        self::assertNull($orderDetails->getOrder()->getContactPerson());
+        self::assertNull($orderDetails->getOrder()->getInvoiceData());
+
+        $items = $orderDetails->getItems();
+        self::assertCount(3, $items);
+        foreach ($items as $item) {
+            switch ($item->getSellerId()) {
+                case 'doniczka-czarna':
+                    self::assertEquals(3, $item->getQuantity());
+                    self::assertEquals('42,00 zł', $item->getTotal());
+                    self::assertEquals('42,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals("Doniczka czarna", $item->getProductVersion()->getName());
+                    self::assertNull($item->getProductVersion()->getPageUri());
+                    self::assertEquals(
+                        'https://onecart-public.s3.atman.pl/web-image/99d/fc6/762/ef14d998a86ff4583abba58/doniczka.jpg',
+                        $item->getProductVersion()->getImageThumbnailUri()
+                    );
+                    self::assertEquals('14,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals(0.23, $item->getProductVersion()->getTax());
+                    $properties = $item->getProductVersion()->getProperties();
+                    self::assertInstanceOf(PhysicalProperties::class, $properties);
+                    self::assertEquals(200, $properties->getDimensions()->getLength());
+                    self::assertEquals(200, $properties->getDimensions()->getWidth());
+                    self::assertEquals(300, $properties->getDimensions()->getHeight());
+                    self::assertEquals(0.5, $properties->getWeight());
+                    break;
+
+                case 'figurka':
+                    self::assertEquals(1, $item->getQuantity());
+                    self::assertEquals('119,00 zł', $item->getTotal());
+                    self::assertEquals('119,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals("Figurka", $item->getProductVersion()->getName());
+                    self::assertNull($item->getProductVersion()->getPageUri());
+                    self::assertEquals(
+                        'https://onecart-public.s3.atman.pl/web-image/238/ac1/1b3/d114ceaaca3b78c7ae2fe74/figurka.jpg',
+                        $item->getProductVersion()->getImageThumbnailUri()
+                    );
+                    self::assertEquals('119,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals(0.23, $item->getProductVersion()->getTax());
+                    $properties = $item->getProductVersion()->getProperties();
+                    self::assertInstanceOf(PhysicalProperties::class, $properties);
+                    self::assertEquals(200, $properties->getDimensions()->getLength());
+                    self::assertEquals(200, $properties->getDimensions()->getWidth());
+                    self::assertEquals(300, $properties->getDimensions()->getHeight());
+                    self::assertEquals(1, $properties->getWeight());
+                    break;
+
+                case 'budzik':
+                    self::assertEquals(2, $item->getQuantity());
+                    self::assertEquals('78,00 zł', $item->getTotal());
+                    self::assertEquals('78,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals("Budzik", $item->getProductVersion()->getName());
+                    self::assertNull($item->getProductVersion()->getPageUri());
+                    self::assertEquals(
+                        'https://onecart-public.s3.atman.pl/web-image/228/cf8/ff9/e67478396b8a29799981ba6/budzik.jpg',
+                        $item->getProductVersion()->getImageThumbnailUri()
+                    );
+                    self::assertEquals('39,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals(0.23, $item->getProductVersion()->getTax());
+                    $properties = $item->getProductVersion()->getProperties();
+                    self::assertInstanceOf(PhysicalProperties::class, $properties);
+                    self::assertEquals(100, $properties->getDimensions()->getLength());
+                    self::assertEquals(100, $properties->getDimensions()->getWidth());
+                    self::assertEquals(100, $properties->getDimensions()->getHeight());
+                    self::assertEquals(0.1, $properties->getWeight());
+                    break;
+            }
+        }
+
+        $payments = $orderDetails->getPayments();
+        $payment = $payments[0];
+        self::assertInstanceOf(BlueMediaPayment::class, $payment);
+        $createdAt = $payment->getCreatedAt();
+        self::assertNotNull($createdAt);
+        self::assertEquals('2021-12-16T15:33:39+00:00', $createdAt->format(DateTimeInterface::RFC3339));
+        $completedAt = $payment->getCompletedAt();
+        self::assertNotNull($completedAt);
+        self::assertEquals('2021-12-16T15:34:06+00:00', $completedAt->format(DateTimeInterface::RFC3339));
+        self::assertNull($payment->getCancelledAt());
+        self::assertEquals('301,85 zł', $payment->getValue());
+        self::assertSame(106, $payment->getGateway());
+
+        $shipments = $orderDetails->getShipments();
+        foreach ($shipments as $shipment) {
+            self::assertInstanceOf(FurgonetkaDpdShipment::class, $shipment);
+            self::assertEquals(
+                '2021-12-16T15:33:33+00:00',
+                $shipment->getCreatedAt()->format(DateTimeInterface::RFC3339)
+            );
+            self::assertEquals(500, $shipment->getDimensions()->getLength());
+            self::assertEquals(500, $shipment->getDimensions()->getWidth());
+            self::assertEquals(500, $shipment->getDimensions()->getHeight());
+            self::assertEquals('20,95 zł', $shipment->getPrice());
+            $sender = $shipment->getSender();
+            self::assertEquals('maciej@seller.pl', $sender->getPerson()->getEmail());
+            self::assertEquals('Kowalski', $sender->getPerson()->getFamilyName());
+            self::assertEquals('Maciej', $sender->getPerson()->getGivenName());
+            self::assertEquals('Demo 1koszyk', $sender->getPerson()->getOrganization());
+            self::assertEquals('600123123', $sender->getPerson()->getPhoneNumber());
+            self::assertEquals('PL', $sender->getAddress()->getCountryCode());
+            self::assertNull($sender->getAddress()->getAdministrativeArea());
+            self::assertEquals('Kraków', $sender->getAddress()->getLocality());
+            self::assertNull($sender->getAddress()->getDependentLocality());
+            self::assertNull($sender->getAddress()->getSortingCode());
+            self::assertEquals('31-042', $sender->getAddress()->getPostalCode());
+            self::assertEquals('Rynek Główny', $sender->getAddress()->getStreet());
+            self::assertEquals('1', $sender->getAddress()->getBuildingNumber());
+            self::assertEquals('100', $sender->getAddress()->getFlatNumber());
+            $recipient = $shipment->getRecipient();
+            self::assertEquals('buyer@example.com', $recipient->getPerson()->getEmail());
+            self::assertEquals('Test', $recipient->getPerson()->getFamilyName());
+            self::assertEquals('Test', $recipient->getPerson()->getGivenName());
+            self::assertNull($recipient->getPerson()->getOrganization());
+            self::assertEquals('600123456', $recipient->getPerson()->getPhoneNumber());
+            self::assertEquals('PL', $recipient->getAddress()->getCountryCode());
+            self::assertNull($recipient->getAddress()->getAdministrativeArea());
+            self::assertEquals('Kraków', $recipient->getAddress()->getLocality());
+            self::assertNull($recipient->getAddress()->getDependentLocality());
+            self::assertNull($recipient->getAddress()->getSortingCode());
+            self::assertEquals('31-323', $recipient->getAddress()->getPostalCode());
+            self::assertEquals('Gdyńska', $recipient->getAddress()->getStreet());
+            self::assertEquals('19', $recipient->getAddress()->getBuildingNumber());
+            self::assertNull($recipient->getAddress()->getFlatNumber());
+
+            $productsIds = $shipment->getProductIds();
+            sort($productsIds);
+            switch ($shipment->getId()) {
+                case '57a653fc-f43c-4860-8b0f-013673413407':
+                    self::assertEquals(['budzik', 'budzik', 'doniczka-czarna'], $productsIds);
+                    self::assertEquals(0.7, $shipment->getWeight());
+                    self::assertNull($shipment->getCodValue());
+                    self::assertNull($shipment->getPreparedAt());
+                    self::assertNull($shipment->getPickedUpAt());
+                    self::assertNull($shipment->getDeliveredAt());
+                    self::assertNull($shipment->getReturnedAt());
+                    self::assertNull($shipment->getCancelledAt());
+                    self::assertNull($shipment->getSurcharge());
+                    self::assertNull($shipment->getSurchargeDescription());
+                    self::assertNull($shipment->getWaybillNumber());
+                    break;
+
+                case '231dcf97-3ff8-46ba-b32b-f025d53843a6':
+                    self::assertEquals(['doniczka-czarna', 'doniczka-czarna'], $productsIds);
+                    self::assertEquals(1, $shipment->getWeight());
+                    self::assertNull($shipment->getCodValue());
+                    self::assertNull($shipment->getPreparedAt());
+                    self::assertNull($shipment->getPickedUpAt());
+                    self::assertNull($shipment->getDeliveredAt());
+                    self::assertNull($shipment->getReturnedAt());
+                    self::assertNull($shipment->getCancelledAt());
+                    self::assertNull($shipment->getSurcharge());
+                    self::assertNull($shipment->getSurchargeDescription());
+                    self::assertNull($shipment->getWaybillNumber());
+                    break;
+
+                case 'e6d59cd3-d65c-46bf-8a22-7fd3f5cdfd9d':
+                    self::assertEquals(['figurka'], $productsIds);
+                    self::assertEquals(1, $shipment->getWeight());
+                    self::assertNull($shipment->getCodValue());
+                    $preparedAt = $shipment->getPreparedAt();
+                    self::assertNotNull($preparedAt);
+                    self::assertEquals('2021-12-20T15:30:28+00:00', $preparedAt->format(DateTimeInterface::RFC3339));
+                    $pickedUpAt = $shipment->getPickedUpAt();
+                    self::assertNotNull($pickedUpAt);
+                    self::assertEquals('2021-12-20T15:33:45+00:00', $pickedUpAt->format(DateTimeInterface::RFC3339));
+                    $deliveredAt = $shipment->getDeliveredAt();
+                    self::assertNotNull($deliveredAt);
+                    self::assertEquals('2021-12-20T15:42:23+00:00', $deliveredAt->format(DateTimeInterface::RFC3339));
+                    self::assertNull($shipment->getReturnedAt());
+                    self::assertNull($shipment->getCancelledAt());
+                    self::assertNull($shipment->getSurcharge());
+                    self::assertNull($shipment->getSurchargeDescription());
+                    self::assertEquals('0000000831130Q', $shipment->getWaybillNumber());
+                    break;
+            }
+        }
     }
 
     public function testAllProducts(): void

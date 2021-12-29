@@ -11,8 +11,15 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
+use InvalidArgumentException;
+use OneCart\Api\Model\Dimensions;
 use OneCart\Api\Model\FormattedMoney;
+use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
+
+use function array_key_exists;
+use function array_keys;
+use function array_reduce;
 
 final class ProductVersion
 {
@@ -26,6 +33,29 @@ final class ProductVersion
      * @var array<ProductExtension>
      */
     private array $extensions;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data, UriFactoryInterface $uriFactory): self
+    {
+        $pageUri = (null !== ($data['page_uri'] ?? null)) ? $uriFactory->createUri($data['page_uri']) : null;
+
+        $imageThumbnailUri = (null !== ($data['image_thumbnail'] ?? null))
+            ? $uriFactory->createUri($data['image_thumbnail'])
+            : null;
+
+        return new self(
+            $data['name'],
+            $pageUri,
+            $imageThumbnailUri,
+            FormattedMoney::fromData($data['price'] ?? []),
+            $data['tax_rate'],
+            self::parseProductProperties($data['properties'] ?? null, $uriFactory),
+            self::parseProductExtensions($data['extensions'] ?? [])
+        );
+    }
 
     /**
      * @param UriInterface|null $pageUri
@@ -89,5 +119,68 @@ final class ProductVersion
     public function getExtensions(): array
     {
         return $this->extensions;
+    }
+
+    /**
+     * @param array<string,mixed>|null $properties
+     * @param UriFactoryInterface $uriFactory
+     * @return ProductProperties|null
+     */
+    private static function parseProductProperties(
+        ?array $properties,
+        UriFactoryInterface $uriFactory
+    ): ?ProductProperties {
+        if (null === $properties) {
+            return null;
+        }
+
+        switch ($properties['type'] ?? null) {
+            case 'digital-uri':
+                return new DigitalUriProperties($uriFactory->createUri($properties['uri']));
+
+            case 'physical':
+                return new PhysicalProperties(
+                    Dimensions::fromData($properties['dimensions']),
+                    (float) $properties['weight']
+                );
+        }
+
+        throw new InvalidArgumentException("Unknown product properties of type {$properties['type']}");
+    }
+
+    /**
+     * @param array<string,mixed> $extensionsData
+     * @return array<ProductExtension>
+     */
+    private static function parseProductExtensions(array $extensionsData): array
+    {
+        return array_reduce(
+            array_keys($extensionsData),
+            static function (array $parsedExtensions, string $extensionKey) use (&$extensionsData): array {
+                $parsedExtensions[] = self::parseProductExtension($extensionKey, $extensionsData[$extensionKey]);
+
+                return $parsedExtensions;
+            },
+            []
+        );
+    }
+
+    /**
+     * @param string $extensionKey
+     * @param array<string,mixed> $extensionData
+     * @return ProductExtension
+     */
+    private static function parseProductExtension(string $extensionKey, array $extensionData): ProductExtension
+    {
+        switch ($extensionKey) {
+            case 'eu_vat_exemption':
+                return new EuVatExemptionExtension($extensionData['vat_exemption'] ?? '');
+            case 'eu_return_rights_forfeit':
+                return new EuReturnRightsForfeitExtension($extensionData['forfeit_required'] ?? false);
+            case 'pl_vat_gtu_code':
+                return new PlVatGTUExtension($extensionData['vat_gtu_code'] ?? null);
+        }
+
+        throw new InvalidArgumentException("Unknown product extension of type {$extensionKey}");
     }
 }

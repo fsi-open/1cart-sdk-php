@@ -20,15 +20,11 @@ final class Person
     private ?PhoneNumber $phoneNumber;
 
     /**
-     * @param array<string,string|null>|null $data
-     * @return static|null
+     * @param array<string,string|null> $data
+     * @return static
      */
-    public static function fromData(?array $data): ?self
+    public static function fromData(array $data): self
     {
-        if (null === $data) {
-            return null;
-        }
-
         return new self(
             $data['given_name'] ?? '',
             $data['family_name'] ?? '',

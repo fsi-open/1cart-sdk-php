@@ -16,6 +16,7 @@ use OneCart\Api\Model\EmailAddress;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\InvoiceData;
 use OneCart\Api\Model\Person;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final class Order
@@ -35,6 +36,31 @@ final class Order
     private ?string $comments;
     private ?Person $contactPerson;
     private ?InvoiceData $invoiceData;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            Uuid::fromString($data['id']),
+            $data['number'],
+            new DateTimeImmutable($data['created_at']),
+            new EmailAddress($data['customer']['email'] ?? ''),
+            (null !== ($data['cancelled_at'] ?? null)) ? new DateTimeImmutable($data['cancelled_at']) : null,
+            $data['payment_type'] ?? null,
+            $data['shipping_type'] ?? null,
+            FormattedMoney::fromData($data['total'] ?? []),
+            FormattedMoney::fromData($data['total_with_shipping'] ?? []),
+            FormattedMoney::fromData($data['total_with_shipping_without_discount'] ?? []),
+            $data['payment_state'] ?? null,
+            $data['shipping_state'] ?? null,
+            $data['comments'] ?? null,
+            (null !== ($data['contact_person'] ?? null)) ? Person::fromData($data['contact_person'] ?? []) : null,
+            (null !== ($data['invoice_data'] ?? null)) ? InvoiceData::fromData($data['invoice_data'] ?? []) : null
+        );
+    }
 
     public function __construct(
         UuidInterface $id,

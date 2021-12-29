@@ -12,8 +12,12 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Product;
 
 use OneCart\Api\Model\FormattedMoney;
+use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+
+use function array_map;
 
 final class Product
 {
@@ -26,6 +30,22 @@ final class Product
      */
     private array $suppliersIds;
     private ProductVersion $version;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data, UriFactoryInterface $uriFactory): self
+    {
+        return new self(
+            Uuid::fromString($data['id']),
+            $data['seller_id'],
+            $uriFactory->createUri($data['short_code_uri']),
+            $data['disabled'],
+            array_map(static fn(string $uuid): UuidInterface => Uuid::fromString($uuid), $data['suppliers']),
+            ProductVersion::fromData($data, $uriFactory)
+        );
+    }
 
     /**
      * @param UuidInterface $id

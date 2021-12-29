@@ -13,6 +13,7 @@ namespace OneCart\Api\Model\Payment;
 
 use DateTimeImmutable;
 use OneCart\Api\Model\FormattedMoney;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final class BlueMediaPayment implements Payment
@@ -20,6 +21,22 @@ final class BlueMediaPayment implements Payment
     use PaymentImplementation;
 
     private int $gateway;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            Uuid::fromString($data['id']),
+            new DateTimeImmutable($data['created_at']),
+            FormattedMoney::fromData($data['value'] ?? []),
+            (null !== ($data['completed_at'] ?? null)) ? new DateTimeImmutable($data['completed_at']) : null,
+            (null !== ($data['cancelled_at'] ?? null)) ? new DateTimeImmutable($data['cancelled_at']) : null,
+            $data['gateway'] ?? 0
+        );
+    }
 
     public function __construct(
         UuidInterface $id,
@@ -29,11 +46,7 @@ final class BlueMediaPayment implements Payment
         ?DateTimeImmutable $cancelledAt,
         int $gateway
     ) {
-        $this->id = $id;
-        $this->createdAt = $createdAt;
-        $this->value = $value;
-        $this->completedAt = $completedAt;
-        $this->cancelledAt = $cancelledAt;
+        $this->construct($id, $createdAt, $value, $completedAt, $cancelledAt);
         $this->gateway = $gateway;
     }
 

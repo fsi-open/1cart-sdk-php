@@ -12,7 +12,12 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Order;
 
 use OneCart\Api\Model\Payment\Payment;
+use OneCart\Api\Model\Payment\PaymentFactory;
 use OneCart\Api\Model\Shipping\Shipment;
+use OneCart\Api\Model\Shipping\ShipmentFactory;
+use Psr\Http\Message\UriFactoryInterface;
+
+use function array_map;
 
 final class OrderDetails
 {
@@ -29,6 +34,29 @@ final class OrderDetails
      * @var array<Shipment>
      */
     private array $shipments;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data, UriFactoryInterface $uriFactory): self
+    {
+        return new self(
+            Order::fromData($data),
+            array_map(
+                static fn (array $itemData) => OrderItem::fromData($itemData, $uriFactory),
+                $data['items'] ?? []
+            ),
+            array_map(
+                static fn (array $paymentData) => PaymentFactory::fromData($paymentData),
+                $data['payments'] ?? []
+            ),
+            array_map(
+                static fn (array $shipmentData) => ShipmentFactory::fromData($shipmentData),
+                $data['shipments'] ?? []
+            )
+        );
+    }
 
     /**
      * @param Order $order

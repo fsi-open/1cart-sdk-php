@@ -16,6 +16,15 @@ final class PersonalAddress
     private Person $person;
     private Address $address;
 
+    /**
+     * @param array<string,array<string,mixed>> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(Person::fromData($data['person'] ?? []), Address::fromData($data['address'] ?? []));
+    }
+
     public function __construct(Person $person, Address $address)
     {
         $this->person = $person;

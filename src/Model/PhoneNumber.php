@@ -23,9 +23,9 @@ final class PhoneNumber
     {
         $phoneNumberUtil = PhoneNumberUtil::getInstance();
         try {
-            $phoneNumberInfo = $phoneNumberUtil->parse($phone);
+            $phoneNumberInfo = $phoneNumberUtil->parse($phone, 'PL');
         } catch (NumberParseException $e) {
-            throw new RuntimeException("Invalid phone number {$phone}");
+            throw new RuntimeException("Invalid phone number {$phone}: \"{$e->getMessage()}\"");
         }
 
         $this->phone = $phone;

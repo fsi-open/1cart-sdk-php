@@ -14,6 +14,7 @@ namespace OneCart\Api\Model\Shipping;
 use DateTimeImmutable;
 use OneCart\Api\Model\EmailAddress;
 use OneCart\Api\Model\FormattedMoney;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 final class DigitalShipment implements Shipment
@@ -22,6 +23,27 @@ final class DigitalShipment implements Shipment
 
     private EmailAddress $recipient;
     private bool $returnRightsForfeited;
+
+    /**
+     * @param array<string,mixed> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            Uuid::fromString($data['id']),
+            new DateTimeImmutable($data['created_at']),
+            $data['description'],
+            $data['items'],
+            FormattedMoney::fromData($data['price'] ?? []),
+            FormattedMoney::fromData($data['cod_price'] ?? []),
+            (null !== ($data['prepared_at'] ?? null)) ? new DateTimeImmutable($data['prepared_at']) : null,
+            (null !== ($data['delivered_at'] ?? null)) ? new DateTimeImmutable($data['delivered_at']) : null,
+            (null !== ($data['cancelled_at'] ?? null)) ? new DateTimeImmutable($data['cancelled_at']) : null,
+            new EmailAddress($data['recipient'] ?? ''),
+            (bool) ($data['return_rights_forfeited'] ?? false)
+        );
+    }
 
     /**
      * @param UuidInterface $id
