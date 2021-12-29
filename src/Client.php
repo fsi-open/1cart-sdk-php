@@ -11,7 +11,13 @@ declare(strict_types=1);
 
 namespace OneCart\Api;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use Generator;
+use OneCart\Api\Model\EmailAddress;
+use OneCart\Api\Model\InvoiceData;
+use OneCart\Api\Model\Order\Order;
+use OneCart\Api\Model\Person;
 use OneCart\Api\Model\Product\DigitalUriProperties;
 use OneCart\Api\Model\Dimensions;
 use OneCart\Api\Model\Product\EuReturnRightsForfeitExtension;
@@ -38,6 +44,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_reduce;
+use function http_build_query;
 use function json_encode;
 
 class Client
@@ -81,6 +88,25 @@ class Client
     }
 
     /**
+     * @return Generator<Order>
+     */
+    public function allOrders(
+        ?DateTimeImmutable $createdAtFrom = null,
+        ?DateTimeImmutable $createdAtTo = null
+    ): Generator {
+        $queryData = [];
+        if (null !== $createdAtFrom) {
+            $queryData['created_at_from'] = $createdAtFrom->format(DateTimeInterface::RFC3339);
+        }
+        if (null !== $createdAtTo) {
+            $queryData['created_at_to'] = $createdAtTo->format(DateTimeInterface::RFC3339);
+        }
+        foreach ($this->sendRequest('get', 'orders/all', null, $queryData) as $order) {
+            yield $order['number'] => $this->parseOrder($order);
+        }
+    }
+
+    /**
      * @return Generator<Product>
      */
     public function allProducts(): Generator
@@ -104,20 +130,25 @@ class Client
     /**
      * @param string $method
      * @param string $path
-     * @param array<array-key,mixed>|null $data
+     * @param array<array-key,mixed>|null $bodyData
+     * @param array<array-key,mixed>|null $queryData
      * @return array<array-key,mixed>
      */
-    private function sendRequest(string $method, string $path, ?array $data = null): array
+    private function sendRequest(string $method, string $path, ?array $bodyData = null, ?array $queryData = null): array
     {
+        $uri = $this->buildUri($path);
+        if (null !== $queryData && 0 !== count($queryData)) {
+            $uri = $uri->withQuery(http_build_query($queryData));
+        }
         $request = $this->requestFactory
-            ->createRequest($method, $this->buildUri($path))
+            ->createRequest($method, $uri)
             ->withHeader('User-Agent', '1cart API Client')
             ->withHeader('Accept', 'application/json')
             ->withHeader('X-Client-Id', $this->apiClientId)
             ->withHeader('X-API-Key', $this->apiKey)
         ;
-        if (null !== $data) {
-            $request = $request->withBody($this->streamFactory->createStream(json_encode($data, JSON_THROW_ON_ERROR)));
+        if (null !== $bodyData) {
+            $request = $request->withBody($this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR)));
         }
 
         $response = $this->httpClient->sendRequest($request);
@@ -160,6 +191,31 @@ class Client
     }
 
     /**
+     * @param array<array-key,mixed> $orderData
+     * @return Order
+     */
+    private function parseOrder(array $orderData): Order
+    {
+        return new Order(
+            Uuid::fromString($orderData['id']),
+            $orderData['number'],
+            new DateTimeImmutable($orderData['created_at']),
+            new EmailAddress($orderData['customer']['email'] ?? ''),
+            (null !== ($orderData['cancelled_at'] ?? null)) ? new DateTimeImmutable($orderData['cancelled_at']) : null,
+            $orderData['payment_type'] ?? null,
+            $orderData['shipping_type'] ?? null,
+            $this->parseFormattedMoney($orderData['total'] ?? []),
+            $this->parseFormattedMoney($orderData['total_with_shipping'] ?? []),
+            $this->parseFormattedMoney($orderData['total_with_shipping_without_discount'] ?? []),
+            $orderData['payment_state'] ?? null,
+            $orderData['shipping_state'] ?? null,
+            $orderData['comments'] ?? null,
+            Person::fromData($orderData['contact_person'] ?? null),
+            InvoiceData::fromData($orderData['invoice_data'] ?? null)
+        );
+    }
+
+    /**
      * @param array<string,mixed> $productData
      * @return Product
      */
@@ -183,11 +239,7 @@ class Client
                 $productData['name'],
                 $pageUri,
                 $imageThumbnailUri,
-                new FormattedMoney(
-                    $productData['price']['amount'],
-                    $productData['price']['currency'],
-                    $productData['price']['formatted']
-                ),
+                $this->parseFormattedMoney($productData['price'] ?? []),
                 $productData['tax_rate'],
                 $this->parseProductProperties($productData['properties'] ?? null),
                 $this->parseProductExtensions($productData['extensions'] ?? [])
@@ -256,6 +308,19 @@ class Client
                 return $parsedExtensions;
             },
             []
+        );
+    }
+
+    /**
+     * @param array<array-key,mixed> $moneyData
+     * @return FormattedMoney
+     */
+    private function parseFormattedMoney(array $moneyData): FormattedMoney
+    {
+        return new FormattedMoney(
+            $moneyData['amount'] ?? '',
+            $moneyData['currency'] ?? '',
+            $moneyData['formatted'] ?? ''
         );
     }
 }

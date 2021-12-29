@@ -25,4 +25,9 @@ final class TaxId
     {
         return $this->vatId;
     }
+
+    public function __toString(): string
+    {
+        return $this->getVatId();
+    }
 }

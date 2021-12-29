@@ -19,6 +19,25 @@ final class Person
     private ?EmailAddress $email;
     private ?PhoneNumber $phoneNumber;
 
+    /**
+     * @param array<string,string|null>|null $data
+     * @return static|null
+     */
+    public static function fromData(?array $data): ?self
+    {
+        if (null === $data) {
+            return null;
+        }
+
+        return new self(
+            $data['given_name'] ?? '',
+            $data['family_name'] ?? '',
+            $data['organization'] ?? null,
+            (null !== ($data['email'] ?? null)) ? new EmailAddress($data['email'] ?? '') : null,
+            (null !== ($data['phone_number'] ?? null)) ? new PhoneNumber($data['phone_number'] ?? '') : null
+        );
+    }
+
     public function __construct(
         string $givenName,
         string $familyName,

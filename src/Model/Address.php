@@ -44,6 +44,25 @@ final class Address
     private string $buildingNumber;
     private ?string $flatNumber;
 
+    /**
+     * @param array<string,string|null> $data
+     * @return static
+     */
+    public static function fromData(array $data): self
+    {
+        return new self(
+            $data['country_code'] ?? '',
+            $data['postal_code'] ?? '',
+            $data['sorting_code'] ?? null,
+            $data['administrative_area'] ?? null,
+            $data['locality'] ?? null,
+            $data['dependent_locality'] ?? null,
+            $data['street'] ?? '',
+            $data['building_number'] ?? '',
+            $data['flat_number'] ?? null
+        );
+    }
+
     public function __construct(
         string $countryCode,
         ?string $postalCode,
