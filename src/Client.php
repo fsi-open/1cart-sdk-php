@@ -18,14 +18,19 @@ use OneCart\Api\Model\Order\Order;
 use OneCart\Api\Model\Order\OrderDetails;
 use OneCart\Api\Model\Product\Product;
 use OneCart\Api\Model\ProductStock;
+use OneCart\Api\Model\Subscription\Event;
+use OneCart\Api\Model\Subscription\Subscription;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use Ramsey\Uuid\UuidInterface;
 use RuntimeException;
 
+use function array_map;
+use function array_walk;
 use function http_build_query;
 use function json_encode;
 
@@ -60,7 +65,40 @@ class Client
     }
 
     /**
-     * @return Generator<ProductStock>
+     * @param UriInterface $uri
+     * @param array<int,Event::*> $events
+     * @return Generator<string,Subscription>
+     */
+    public function subscribe(UriInterface $uri, array $events): Generator
+    {
+        array_walk($events, static function (string $event): void {
+            Event::assertExists($event);
+        });
+
+        $requestData = [
+            'callbackUrl' => (string) $uri,
+            'events' => $events
+        ];
+        foreach ($this->sendRequest('post', 'subscription', $requestData) as $subscription) {
+            yield $subscription['id'] => Subscription::fromData($subscription, $this->uriFactory);
+        }
+    }
+
+    /**
+     * @param array<UuidInterface> $subscriptionIds
+     */
+    public function unsubscribe(array $subscriptionIds): void
+    {
+        $requestData = array_map(
+            static fn(UuidInterface $subscriptionId): string => $subscriptionId->toString(),
+            $subscriptionIds
+        );
+
+        $this->sendRequest('delete', 'subscription', $requestData);
+    }
+
+    /**
+     * @return Generator<string,ProductStock>
      */
     public function allStocks(): Generator
     {
@@ -70,7 +108,7 @@ class Client
     }
 
     /**
-     * @return Generator<Order>
+     * @return Generator<string,Order>
      */
     public function allOrders(
         ?DateTimeImmutable $createdAtFrom = null,
@@ -90,7 +128,7 @@ class Client
 
     /**
      * @param array<int,string> $ordersNumbers
-     * @return Generator<OrderDetails>
+     * @return Generator<string,OrderDetails>
      */
     public function ordersDetails(array $ordersNumbers): Generator
     {
@@ -100,7 +138,7 @@ class Client
     }
 
     /**
-     * @return Generator<Product>
+     * @return Generator<string,Product>
      */
     public function allProducts(): Generator
     {
@@ -111,7 +149,7 @@ class Client
 
     /**
      * @param array<string> $identities
-     * @return Generator<Product>
+     * @return Generator<string,Product>
      */
     public function products(array $identities): Generator
     {
