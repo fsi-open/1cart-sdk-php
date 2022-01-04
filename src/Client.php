@@ -13,26 +13,39 @@ namespace OneCart\Api;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use finfo;
 use Generator;
 use OneCart\Api\Model\Order\Order;
 use OneCart\Api\Model\Order\OrderDetails;
 use OneCart\Api\Model\Product\Product;
+use OneCart\Api\Model\Product\ProductVersion;
 use OneCart\Api\Model\ProductStock;
 use OneCart\Api\Model\Subscription\Event;
 use OneCart\Api\Model\Subscription\Subscription;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Ramsey\Uuid\UuidInterface;
 use RuntimeException;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 
 use function array_map;
+use function array_merge_recursive;
 use function array_walk;
+use function get_class;
 use function http_build_query;
+use function is_object;
+use function json_decode;
 use function json_encode;
+use function sprintf;
+
+use const JSON_THROW_ON_ERROR;
 
 class Client
 {
@@ -159,6 +172,72 @@ class Client
     }
 
     /**
+     * @param string $sellerId
+     * @param ProductVersion $productVersion
+     * @param array<UuidInterface>|null $suppliersIds
+     * @param bool $disabled
+     */
+    public function createProduct(
+        string $sellerId,
+        ProductVersion $productVersion,
+        ?array $suppliersIds = null,
+        bool $disabled = false
+    ): Product {
+        $requestData = $productVersion->jsonSerialize();
+        $requestData['seller_id'] = $sellerId;
+        $requestData['disabled'] = $disabled;
+        if (null !== $suppliersIds) {
+            $requestData['suppliers'] = $suppliersIds;
+        }
+
+        $responseData = $this->sendRequest('post', 'product', $requestData);
+
+        return Product::fromData($responseData, $this->uriFactory);
+    }
+
+    /**
+     * @param string $sellerId
+     * @param ProductVersion $productVersion
+     * @param array<UuidInterface>|null $suppliersIds
+     * @param bool $disabled
+     */
+    public function updateProduct(
+        string $sellerId,
+        ProductVersion $productVersion,
+        ?array $suppliersIds = [],
+        bool $disabled = false
+    ): Product {
+        $requestData = $productVersion->jsonSerialize();
+        $requestData['disabled'] = $disabled;
+        if (null !== $suppliersIds) {
+            $requestData['suppliers'] = $suppliersIds;
+        }
+
+        $responseData = $this->sendRequest('put', "product/{$sellerId}", $requestData);
+
+        return Product::fromData($responseData, $this->uriFactory);
+    }
+
+    public function updateProductImage(string $sellerId, StreamInterface $imageStream, ?string $filename): void
+    {
+        $imageData = (string) $imageStream;
+        $mimeType = (new finfo())->buffer($imageData);
+        if (false === $mimeType) {
+            throw new RuntimeException("Unable to determine mime type of image");
+        }
+        $formData = [
+            'image' => new DataPart($imageData, $filename, $mimeType)
+        ];
+
+        $request = $this->createRequest($this->buildUri("product/{$sellerId}/image"), 'post');
+        $request = $this->buildFormDataRequest($request, $formData);
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    /**
      * @param string $method
      * @param string $path
      * @param array<array-key,mixed>|null $bodyData
@@ -167,35 +246,12 @@ class Client
      */
     private function sendRequest(string $method, string $path, ?array $bodyData = null, ?array $queryData = null): array
     {
-        $uri = $this->buildUri($path);
-        if (null !== $queryData && 0 !== count($queryData)) {
-            $uri = $uri->withQuery(http_build_query($queryData));
-        }
-        $request = $this->requestFactory
-            ->createRequest($method, $uri)
-            ->withHeader('User-Agent', '1cart API Client')
-            ->withHeader('Accept', 'application/json')
-            ->withHeader('X-Client-Id', $this->apiClientId)
-            ->withHeader('X-API-Key', $this->apiKey)
-        ;
-        if (null !== $bodyData) {
-            $request = $request->withBody(
-                $this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR))
-            );
-        }
+        $uri = $this->buildUri($path, $queryData);
+        $request = $this->buildJsonRequest($this->createRequest($uri, $method), $bodyData);
 
         $response = $this->httpClient->sendRequest($request);
-        if (200 !== $response->getStatusCode()) {
-            throw new RuntimeException(
-                sprintf(
-                    'The request to "%s" has returned an unexpected response code "%s"',
-                    $path,
-                    $response->getStatusCode()
-                )
-            );
-        }
 
-        return $this->decodeBody($response);
+        return $this->parseResponse($uri, $response);
     }
 
     /**
@@ -218,8 +274,107 @@ class Client
         return $data;
     }
 
-    private function buildUri(string $path): UriInterface
+    /**
+     * @param array<int,mixed> $responseData
+     * @return array<int,ApiError>
+     */
+    private function parseResponseErrors(array $responseData): array
     {
-        return $this->baseUri->withPath(trim($this->baseUri->getPath(), '/') . '/' . trim($path, '/'));
+        return array_map(
+            static fn (array $errorData): ApiError => ApiError::fromData($errorData),
+            $responseData
+        );
+    }
+
+    /**
+     * @param string $path
+     * @param array<string,mixed>|null $queryData
+     * @return UriInterface
+     */
+    private function buildUri(string $path, ?array $queryData = null): UriInterface
+    {
+        $uri = $this->baseUri->withPath(trim($this->baseUri->getPath(), '/') . '/' . trim($path, '/'));
+        if (null === $queryData) {
+            return $uri;
+        }
+
+        return $uri->withQuery(http_build_query($queryData));
+    }
+
+    private function createRequest(UriInterface $uri, string $method): RequestInterface
+    {
+        return $this->requestFactory
+            ->createRequest($method, $uri)
+            ->withHeader('User-Agent', '1cart API Client')
+            ->withHeader('Accept', 'application/json')
+            ->withHeader('X-Client-Id', $this->apiClientId)
+            ->withHeader('X-API-Key', $this->apiKey)
+        ;
+    }
+
+    /**
+     * @param RequestInterface $request
+     * @param array<string,mixed>|null $bodyData
+     * @return RequestInterface
+     */
+    private function buildJsonRequest(RequestInterface $request, ?array $bodyData): RequestInterface
+    {
+        if (null === $bodyData) {
+            return $request;
+        }
+
+        return $request->withHeader('Content-Type', 'application/json')
+            ->withBody($this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR)))
+        ;
+    }
+
+    /**
+     * @param RequestInterface $request
+     * @param array<string,mixed>|null $formData
+     * @return RequestInterface
+     */
+    private function buildFormDataRequest(RequestInterface $request, ?array $formData): RequestInterface
+    {
+        if (null === $formData) {
+            return $request;
+        }
+
+        $formDataPart = new FormDataPart($formData);
+
+        return $request->withHeader('Content-Type', 'multipart/form-data')
+            ->withBody($this->streamFactory->createStream($formDataPart->bodyToString()))
+        ;
+    }
+
+    /**
+     * @param UriInterface $uri
+     * @param ResponseInterface $response
+     * @return array<array-key,mixed>
+     */
+    private function parseResponse(UriInterface $uri, ResponseInterface $response): array
+    {
+        if ('application/json' === $response->getHeaderLine('Content-Type')) {
+            $responseData = $this->decodeBody($response);
+        } else {
+            throw new RuntimeException(
+                sprintf(
+                    'Expected response of type "application/json" but got "%s"',
+                    $response->getHeaderLine('Content-Type')
+                )
+            );
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new ApiException(
+                sprintf(
+                    'The request to "%s" has returned an unexpected response code "%s"',
+                    $uri->getPath(),
+                    $response->getStatusCode()
+                ),
+                $this->parseResponseErrors($responseData['errors'] ?? [])
+            );
+        }
+
+        return $responseData;
     }
 }

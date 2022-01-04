@@ -21,11 +21,11 @@ final class FormattedMoney
 
     /**
      * @param array<array-key,mixed> $data
-     * @return FormattedMoney
+     * @return Money
      */
-    public static function fromData(array $data): FormattedMoney
+    public static function fromData(array $data): Money
     {
-        return new FormattedMoney($data['amount'] ?? '', $data['currency'] ?? '', $data['formatted'] ?? '');
+        return new Money($data['amount'] ?? '', new Currency($data['currency'] ?? ''));
     }
 
     /**

@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Payment;
 
 use DateTimeImmutable;
+use Money\Money;
 use OneCart\Api\Model\FormattedMoney;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -38,7 +39,7 @@ final class CashOnDeliveryPayment implements Payment
     public function __construct(
         UuidInterface $id,
         DateTimeImmutable $createdAt,
-        FormattedMoney $value,
+        Money $value,
         ?DateTimeImmutable $completedAt,
         ?DateTimeImmutable $cancelledAt
     ) {

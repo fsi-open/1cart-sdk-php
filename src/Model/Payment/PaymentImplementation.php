@@ -12,14 +12,14 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Payment;
 
 use DateTimeImmutable;
-use OneCart\Api\Model\FormattedMoney;
+use Money\Money;
 use Ramsey\Uuid\UuidInterface;
 
 trait PaymentImplementation
 {
     private UuidInterface $id;
     private DateTimeImmutable $createdAt;
-    private FormattedMoney $value;
+    private Money $value;
     private ?DateTimeImmutable $completedAt;
     private ?DateTimeImmutable $cancelledAt;
 
@@ -33,7 +33,7 @@ trait PaymentImplementation
         return $this->createdAt;
     }
 
-    public function getValue(): FormattedMoney
+    public function getValue(): Money
     {
         return $this->value;
     }
@@ -51,7 +51,7 @@ trait PaymentImplementation
     private function construct(
         UuidInterface $id,
         DateTimeImmutable $createdAt,
-        FormattedMoney $value,
+        Money $value,
         ?DateTimeImmutable $completedAt,
         ?DateTimeImmutable $cancelledAt
     ): void {

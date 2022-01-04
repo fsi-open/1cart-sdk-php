@@ -12,15 +12,15 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Shipping;
 
 use DateTimeImmutable;
+use Money\Money;
 use OneCart\Api\Model\Dimensions;
-use OneCart\Api\Model\FormattedMoney;
 
 trait FurgonetkaShipmentImplementation
 {
     private Dimensions $dimensions;
     private float $weight;
     private ?string $waybillNumber;
-    private ?FormattedMoney $surcharge;
+    private ?Money $surcharge;
     private ?string $surchargeDescription;
     private ?DateTimeImmutable $returnedAt;
 
@@ -39,7 +39,7 @@ trait FurgonetkaShipmentImplementation
         return $this->waybillNumber;
     }
 
-    public function getSurcharge(): ?FormattedMoney
+    public function getSurcharge(): ?Money
     {
         return $this->surcharge;
     }
@@ -58,7 +58,7 @@ trait FurgonetkaShipmentImplementation
         Dimensions $dimensions,
         float $weight,
         ?string $waybillNumber,
-        ?FormattedMoney $surcharge,
+        ?Money $surcharge,
         ?string $surchargeDescription,
         ?DateTimeImmutable $returnedAt
     ): void {

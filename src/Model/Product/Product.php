@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-use OneCart\Api\Model\FormattedMoney;
+use Money\Money;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Ramsey\Uuid\Uuid;
@@ -106,7 +106,7 @@ final class Product
         return $this->version->getImageThumbnailUri();
     }
 
-    public function getPrice(): FormattedMoney
+    public function getPrice(): Money
     {
         return $this->version->getPrice();
     }
