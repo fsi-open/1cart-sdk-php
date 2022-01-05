@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Order;
 
 use DateTimeImmutable;
+use Money\Money;
 use OneCart\Api\Model\EmailAddress;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\InvoiceData;
@@ -28,9 +29,9 @@ final class Order
     private ?DateTimeImmutable $cancelledAt;
     private ?string $paymentType;
     private ?string $shippingType;
-    private FormattedMoney $total;
-    private FormattedMoney $totalWithShipping;
-    private FormattedMoney $totalWithShippingWithoutDiscount;
+    private Money $total;
+    private Money $totalWithShipping;
+    private Money $totalWithShippingWithoutDiscount;
     private ?string $paymentState;
     private ?string $shippingState;
     private ?string $comments;
@@ -70,9 +71,9 @@ final class Order
         ?DateTimeImmutable $cancelledAt,
         ?string $paymentType,
         ?string $shippingType,
-        FormattedMoney $total,
-        FormattedMoney $totalWithShipping,
-        FormattedMoney $totalWithShippingWithoutDiscount,
+        Money $total,
+        Money $totalWithShipping,
+        Money $totalWithShippingWithoutDiscount,
         ?string $paymentState,
         ?string $shippingState,
         ?string $comments,
@@ -131,17 +132,17 @@ final class Order
         return $this->shippingType;
     }
 
-    public function getTotal(): FormattedMoney
+    public function getTotal(): Money
     {
         return $this->total;
     }
 
-    public function getTotalWithShipping(): FormattedMoney
+    public function getTotalWithShipping(): Money
     {
         return $this->totalWithShipping;
     }
 
-    public function getTotalWithShippingWithoutDiscount(): FormattedMoney
+    public function getTotalWithShippingWithoutDiscount(): Money
     {
         return $this->totalWithShippingWithoutDiscount;
     }

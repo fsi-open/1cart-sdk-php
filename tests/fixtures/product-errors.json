@@ -1,0 +1,13 @@
+{
+  "message": "Zapytanie nie jest zgodne ze schematem",
+  "errors": [
+    {
+      "message": "Tego pola brakuje.",
+      "field": "extensions.pl_vat_gtu_code.vat_gtu_code"
+    },
+    {
+      "message": "Tego pola się nie spodziewano.",
+      "field": "extensions.pl_vat_gtu_code.gtu_code"
+    }
+  ]
+}

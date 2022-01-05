@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Shipping;
 
 use DateTimeImmutable;
+use Money\Money;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\PersonalAddress;
 use Ramsey\Uuid\Uuid;
@@ -52,8 +53,8 @@ final class ExternalShipment implements Shipment
      * @param DateTimeImmutable $createdAt
      * @param string $description
      * @param array<int,string> $productIds
-     * @param FormattedMoney $price
-     * @param FormattedMoney|null $codValue
+     * @param Money $price
+     * @param Money|null $codValue
      * @param DateTimeImmutable|null $preparedAt
      * @param DateTimeImmutable|null $deliveredAt
      * @param DateTimeImmutable|null $cancelledAt
@@ -67,8 +68,8 @@ final class ExternalShipment implements Shipment
         DateTimeImmutable $createdAt,
         string $description,
         array $productIds,
-        FormattedMoney $price,
-        ?FormattedMoney $codValue,
+        Money $price,
+        ?Money $codValue,
         ?DateTimeImmutable $preparedAt,
         ?DateTimeImmutable $deliveredAt,
         ?DateTimeImmutable $cancelledAt,

@@ -12,21 +12,22 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Product;
 
 use InvalidArgumentException;
+use JsonSerializable;
+use Money\Money;
 use OneCart\Api\Model\Dimensions;
 use OneCart\Api\Model\FormattedMoney;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
-use function array_key_exists;
 use function array_keys;
 use function array_reduce;
 
-final class ProductVersion
+final class ProductVersion implements JsonSerializable
 {
     private string $name;
     private ?UriInterface $pageUri;
     private ?UriInterface $imageThumbnailUri;
-    private FormattedMoney $price;
+    private Money $price;
     private float $tax;
     private ?ProductProperties $properties;
     /**
@@ -60,7 +61,7 @@ final class ProductVersion
     /**
      * @param UriInterface|null $pageUri
      * @param UriInterface|null $imageThumbnailUri
-     * @param FormattedMoney $price
+     * @param Money $price
      * @param float $tax
      * @param ProductProperties|null $properties
      * @param array<ProductExtension> $extensions
@@ -69,7 +70,7 @@ final class ProductVersion
         string $name,
         ?UriInterface $pageUri,
         ?UriInterface $imageThumbnailUri,
-        FormattedMoney $price,
+        Money $price,
         float $tax,
         ?ProductProperties $properties,
         array $extensions
@@ -98,7 +99,7 @@ final class ProductVersion
         return $this->imageThumbnailUri;
     }
 
-    public function getPrice(): FormattedMoney
+    public function getPrice(): Money
     {
         return $this->price;
     }
@@ -119,6 +120,21 @@ final class ProductVersion
     public function getExtensions(): array
     {
         return $this->extensions;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'name' => $this->name,
+            'page_uri' => $this->pageUri,
+            'price' => $this->price->getAmount(),
+            'tax_rate' => $this->tax,
+            'properties' => $this->properties,
+            'extensions' => $this->extensions,
+        ];
     }
 
     /**

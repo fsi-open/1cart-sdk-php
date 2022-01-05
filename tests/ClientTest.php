@@ -16,12 +16,13 @@ use DateTimeInterface;
 use Laminas\Diactoros\StreamFactory;
 use Laminas\Diactoros\UriFactory;
 use Money\Money;
+use OneCart\Api\ApiError;
+use OneCart\Api\ApiException;
 use OneCart\Api\Client;
 use OneCart\Api\Model\Address;
 use OneCart\Api\Model\InvoiceData;
 use OneCart\Api\Model\Order\Order;
 use OneCart\Api\Model\Order\OrderDetails;
-use OneCart\Api\Model\Order\OrderItem;
 use OneCart\Api\Model\Payment\BlueMediaPayment;
 use OneCart\Api\Model\Product\DigitalUriProperties;
 use OneCart\Api\Model\Product\EuReturnRightsForfeitExtension;
@@ -31,6 +32,7 @@ use OneCart\Api\Model\Product\PhysicalProperties;
 use OneCart\Api\Model\Product\PlVatGTUExtension;
 use OneCart\Api\Model\Product\Product;
 use OneCart\Api\Model\FormattedMoney;
+use OneCart\Api\Model\Product\ProductVersion;
 use OneCart\Api\Model\ProductStock;
 use OneCart\Api\Model\Shipping\FurgonetkaDpdShipment;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -45,6 +47,7 @@ use RuntimeException;
 
 use function get_class;
 use function iterator_to_array;
+use function json_decode;
 use function sort;
 
 final class ClientTest extends TestCase
@@ -111,14 +114,17 @@ final class ClientTest extends TestCase
         self::assertEquals('cod', $order1->getPaymentType());
         self::assertEquals('furgonetka-dpd', $order1->getShippingType());
         $total1 = $order1->getTotal();
-        self::assertInstanceOf(FormattedMoney::class, $total1);
-        self::assertEquals('280,98 zł', (string) $total1);
+        self::assertInstanceOf(Money::class, $total1);
+        self::assertEquals('28098', $total1->getAmount());
+        self::assertEquals('PLN', $total1->getCurrency());
         $totalWithShipping1 = $order1->getTotalWithShipping();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShipping1);
-        self::assertEquals('301,84 zł', (string) $totalWithShipping1);
+        self::assertInstanceOf(Money::class, $totalWithShipping1);
+        self::assertEquals('30184', $totalWithShipping1->getAmount());
+        self::assertEquals('PLN', $totalWithShipping1->getCurrency());
         $totalWithShippingWithoutDiscount1 = $order1->getTotalWithShippingWithoutDiscount();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShippingWithoutDiscount1);
-        self::assertEquals('301,84 zł', (string) $totalWithShippingWithoutDiscount1);
+        self::assertInstanceOf(Money::class, $totalWithShippingWithoutDiscount1);
+        self::assertEquals('30184', $totalWithShippingWithoutDiscount1->getAmount());
+        self::assertEquals('PLN', $totalWithShippingWithoutDiscount1->getCurrency());
         self::assertEquals('in_progress', $order1->getPaymentState());
         self::assertEquals('not_begun', $order1->getShippingState());
         self::assertEquals('test comment', $order1->getComments());
@@ -150,14 +156,17 @@ final class ClientTest extends TestCase
         self::assertEquals('blue_media', $order2->getPaymentType());
         self::assertEquals('furgonetka-dpd', $order2->getShippingType());
         $total2 = $order2->getTotal();
-        self::assertInstanceOf(FormattedMoney::class, $total2);
-        self::assertEquals('239,00 zł', (string) $total2);
+        self::assertInstanceOf(Money::class, $total2);
+        self::assertEquals('23900', $total2->getAmount());
+        self::assertEquals('PLN', $total2->getCurrency());
         $totalWithShipping2 = $order2->getTotalWithShipping();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShipping2);
-        self::assertEquals('301,85 zł', (string) $totalWithShipping2);
+        self::assertInstanceOf(Money::class, $totalWithShipping2);
+        self::assertEquals('30185', $totalWithShipping2->getAmount());
+        self::assertEquals('PLN', $totalWithShipping2->getCurrency());
         $totalWithShippingWithoutDiscount2 = $order2->getTotalWithShippingWithoutDiscount();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShippingWithoutDiscount2);
-        self::assertEquals('301,85 zł', (string) $totalWithShippingWithoutDiscount2);
+        self::assertInstanceOf(Money::class, $totalWithShippingWithoutDiscount2);
+        self::assertEquals('30185', $totalWithShippingWithoutDiscount2->getAmount());
+        self::assertEquals('PLN', $totalWithShippingWithoutDiscount2->getCurrency());
         self::assertEquals('completed', $order2->getPaymentState());
         self::assertEquals('partially_delivered', $order2->getShippingState());
         self::assertNull($order2->getComments());
@@ -183,14 +192,17 @@ final class ClientTest extends TestCase
         self::assertEquals('blue_media', $orderDetails->getOrder()->getPaymentType());
         self::assertEquals('furgonetka-dpd', $orderDetails->getOrder()->getShippingType());
         $total = $orderDetails->getOrder()->getTotal();
-        self::assertInstanceOf(FormattedMoney::class, $total);
-        self::assertEquals('239,00 zł', (string) $total);
+        self::assertInstanceOf(Money::class, $total);
+        self::assertEquals('23900', $total->getAmount());
+        self::assertEquals('PLN', $total->getCurrency());
         $totalWithShipping = $orderDetails->getOrder()->getTotalWithShipping();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShipping);
-        self::assertEquals('301,85 zł', (string) $totalWithShipping);
+        self::assertInstanceOf(Money::class, $totalWithShipping);
+        self::assertEquals('30185', $totalWithShipping->getAmount());
+        self::assertEquals('PLN', $totalWithShipping->getCurrency());
         $totalWithShippingWithoutDiscount = $orderDetails->getOrder()->getTotalWithShippingWithoutDiscount();
-        self::assertInstanceOf(FormattedMoney::class, $totalWithShippingWithoutDiscount);
-        self::assertEquals('301,85 zł', (string) $totalWithShippingWithoutDiscount);
+        self::assertInstanceOf(Money::class, $totalWithShippingWithoutDiscount);
+        self::assertEquals('30185', $totalWithShippingWithoutDiscount->getAmount());
+        self::assertEquals('PLN', $totalWithShippingWithoutDiscount->getCurrency());
         self::assertEquals('completed', $orderDetails->getOrder()->getPaymentState());
         self::assertEquals('partially_delivered', $orderDetails->getOrder()->getShippingState());
         self::assertNull($orderDetails->getOrder()->getComments());
@@ -203,15 +215,18 @@ final class ClientTest extends TestCase
             switch ($item->getSellerId()) {
                 case 'doniczka-czarna':
                     self::assertEquals(3, $item->getQuantity());
-                    self::assertEquals('42,00 zł', $item->getTotal());
-                    self::assertEquals('42,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals('4200', $item->getTotal()->getAmount());
+                    self::assertEquals('PLN', $item->getTotal()->getCurrency());
+                    self::assertEquals('4200', $item->getTotalWithoutDiscount()->getAmount());
+                    self::assertEquals('PLN', $item->getTotalWithoutDiscount()->getCurrency());
                     self::assertEquals("Doniczka czarna", $item->getProductVersion()->getName());
                     self::assertNull($item->getProductVersion()->getPageUri());
                     self::assertEquals(
                         'https://onecart-public.s3.atman.pl/web-image/99d/fc6/762/ef14d998a86ff4583abba58/doniczka.jpg',
                         $item->getProductVersion()->getImageThumbnailUri()
                     );
-                    self::assertEquals('14,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals('1400', $item->getProductVersion()->getPrice()->getAmount());
+                    self::assertEquals('PLN', $item->getProductVersion()->getPrice()->getCurrency());
                     self::assertEquals(0.23, $item->getProductVersion()->getTax());
                     $properties = $item->getProductVersion()->getProperties();
                     self::assertInstanceOf(PhysicalProperties::class, $properties);
@@ -223,15 +238,18 @@ final class ClientTest extends TestCase
 
                 case 'figurka':
                     self::assertEquals(1, $item->getQuantity());
-                    self::assertEquals('119,00 zł', $item->getTotal());
-                    self::assertEquals('119,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals('11900', $item->getTotal()->getAmount());
+                    self::assertEquals('PLN', $item->getTotal()->getCurrency());
+                    self::assertEquals('11900', $item->getTotalWithoutDiscount()->getAmount());
+                    self::assertEquals('PLN', $item->getTotalWithoutDiscount()->getCurrency());
                     self::assertEquals("Figurka", $item->getProductVersion()->getName());
                     self::assertNull($item->getProductVersion()->getPageUri());
                     self::assertEquals(
                         'https://onecart-public.s3.atman.pl/web-image/238/ac1/1b3/d114ceaaca3b78c7ae2fe74/figurka.jpg',
                         $item->getProductVersion()->getImageThumbnailUri()
                     );
-                    self::assertEquals('119,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals('11900', $item->getProductVersion()->getPrice()->getAmount());
+                    self::assertEquals('PLN', $item->getProductVersion()->getPrice()->getCurrency());
                     self::assertEquals(0.23, $item->getProductVersion()->getTax());
                     $properties = $item->getProductVersion()->getProperties();
                     self::assertInstanceOf(PhysicalProperties::class, $properties);
@@ -243,15 +261,18 @@ final class ClientTest extends TestCase
 
                 case 'budzik':
                     self::assertEquals(2, $item->getQuantity());
-                    self::assertEquals('78,00 zł', $item->getTotal());
-                    self::assertEquals('78,00 zł', $item->getTotalWithoutDiscount());
+                    self::assertEquals('7800', $item->getTotal()->getAmount());
+                    self::assertEquals('PLN', $item->getTotal()->getCurrency());
+                    self::assertEquals('7800', $item->getTotalWithoutDiscount()->getAmount());
+                    self::assertEquals('PLN', $item->getTotalWithoutDiscount()->getCurrency());
                     self::assertEquals("Budzik", $item->getProductVersion()->getName());
                     self::assertNull($item->getProductVersion()->getPageUri());
                     self::assertEquals(
                         'https://onecart-public.s3.atman.pl/web-image/228/cf8/ff9/e67478396b8a29799981ba6/budzik.jpg',
                         $item->getProductVersion()->getImageThumbnailUri()
                     );
-                    self::assertEquals('39,00 zł', $item->getProductVersion()->getPrice());
+                    self::assertEquals('3900', $item->getProductVersion()->getPrice()->getAmount());
+                    self::assertEquals('PLN', $item->getProductVersion()->getPrice()->getCurrency());
                     self::assertEquals(0.23, $item->getProductVersion()->getTax());
                     $properties = $item->getProductVersion()->getProperties();
                     self::assertInstanceOf(PhysicalProperties::class, $properties);
@@ -273,7 +294,7 @@ final class ClientTest extends TestCase
         self::assertNotNull($completedAt);
         self::assertEquals('2021-12-16T15:34:06+00:00', $completedAt->format(DateTimeInterface::RFC3339));
         self::assertNull($payment->getCancelledAt());
-        self::assertEquals('301,85 zł', $payment->getValue());
+        self::assertEquals('30185', $payment->getValue()->getAmount());
         self::assertSame(106, $payment->getGateway());
 
         $shipments = $orderDetails->getShipments();
@@ -286,7 +307,7 @@ final class ClientTest extends TestCase
             self::assertEquals(500, $shipment->getDimensions()->getLength());
             self::assertEquals(500, $shipment->getDimensions()->getWidth());
             self::assertEquals(500, $shipment->getDimensions()->getHeight());
-            self::assertEquals('20,95 zł', $shipment->getPrice());
+            self::assertEquals('2095', $shipment->getPrice()->getAmount());
             $sender = $shipment->getSender();
             self::assertEquals('maciej@seller.pl', $sender->getPerson()->getEmail());
             self::assertEquals('Kowalski', $sender->getPerson()->getFamilyName());
@@ -423,13 +444,9 @@ final class ClientTest extends TestCase
         );
 
         $price1 = $product1->getPrice();
-        self::assertInstanceOf(FormattedMoney::class, $price1);
-        self::assertEquals('12,34 zł', (string) $price1);
-
-        $moneyPrice1 = $price1->asMoneyObject();
-        self::assertInstanceOf(Money::class, $moneyPrice1);
-        self::assertEquals('1234', $moneyPrice1->getAmount());
-        self::assertEquals('PLN', $moneyPrice1->getCurrency());
+        self::assertInstanceOf(Money::class, $price1);
+        self::assertEquals('1234', $price1->getAmount());
+        self::assertEquals('PLN', $price1->getCurrency());
 
         /** @var Product $product2 */
         $product2 = $products['product2'];
@@ -441,13 +458,9 @@ final class ClientTest extends TestCase
         self::assertEquals(23, $product2->getTax());
 
         $price2 = $product2->getPrice();
-        self::assertInstanceOf(FormattedMoney::class, $price2);
-        self::assertEquals('455,12 zł', (string) $price2);
-
-        $moneyPrice2 = $price2->asMoneyObject();
-        self::assertInstanceOf(Money::class, $moneyPrice2);
-        self::assertEquals('45512', $moneyPrice2->getAmount());
-        self::assertEquals('PLN', $moneyPrice2->getCurrency());
+        self::assertInstanceOf(Money::class, $price2);
+        self::assertEquals('45512', $price2->getAmount());
+        self::assertEquals('PLN', $price2->getCurrency());
     }
 
     public function testProducts(): void
@@ -469,13 +482,9 @@ final class ClientTest extends TestCase
         self::assertEquals(23, $product1->getTax());
 
         $price1 = $product1->getPrice();
-        self::assertInstanceOf(FormattedMoney::class, $price1);
-        self::assertEquals('12,34 zł', (string) $price1);
-
-        $moneyPrice1 = $price1->asMoneyObject();
-        self::assertInstanceOf(Money::class, $moneyPrice1);
-        self::assertEquals('1234', $moneyPrice1->getAmount());
-        self::assertEquals('PLN', $moneyPrice1->getCurrency());
+        self::assertInstanceOf(Money::class, $price1);
+        self::assertEquals('1234', $price1->getAmount());
+        self::assertEquals('PLN', $price1->getCurrency());
 
         /** @var Product $product2 */
         $product2 = $products['product2'];
@@ -514,13 +523,61 @@ final class ClientTest extends TestCase
         );
 
         $price2 = $product2->getPrice();
-        self::assertInstanceOf(FormattedMoney::class, $price2);
-        self::assertEquals('455,12 zł', (string) $price2);
+        self::assertInstanceOf(Money::class, $price2);
+        self::assertEquals('45512', $price2->getAmount());
+        self::assertEquals('PLN', $price2->getCurrency());
+    }
 
-        $moneyPrice2 = $price2->asMoneyObject();
-        self::assertInstanceOf(Money::class, $moneyPrice2);
-        self::assertEquals('45512', $moneyPrice2->getAmount());
-        self::assertEquals('PLN', $moneyPrice2->getCurrency());
+    public function testParsingProductCreationErrors(): void
+    {
+        $expectedRequestData = [
+            'seller_id' => 'test',
+            'name' => 'Product no 1',
+            'page_uri' => null,
+            'price' => '1000',
+            'tax_rate' => 0.23,
+            'properties' => null,
+            'extensions' => [],
+            'disabled' => false,
+        ];
+        $this->mockApiCall('product', 'product-errors.json', 'post', $expectedRequestData, 400);
+
+        try {
+            $this->apiClient->createProduct(
+                'test',
+                new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+            );
+        } catch (ApiException $exception) {
+            self::assertEquals(
+                [
+                    new ApiError('extensions.pl_vat_gtu_code.vat_gtu_code', 'Tego pola brakuje.'),
+                    new ApiError('extensions.pl_vat_gtu_code.gtu_code', 'Tego pola się nie spodziewano.'),
+                ],
+                $exception->getErrors()
+            );
+        }
+    }
+
+    public function testProductCreation(): void
+    {
+        $this->mockApiCall('product', 'product.json', 'post');
+
+        $product = $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+        );
+        self::assertEquals('Yellow T-Shirt XXL', $product->getName());
+    }
+
+    public function testProductUpdate(): void
+    {
+        $this->mockApiCall('product/test', 'product.json', 'put');
+
+        $product = $this->apiClient->updateProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+        );
+        self::assertEquals('Yellow T-Shirt XXL', $product->getName());
     }
 
     /**
@@ -529,6 +586,8 @@ final class ClientTest extends TestCase
     public function testExceptionOnFailedStatus(int $statusCode): void
     {
         $response = $this->createMock(ResponseInterface::class);
+        $response->expects(self::once())->method('getHeaderLine')->with('Content-Type')->willReturn('application/json');
+        $response->expects(self::once())->method('getBody')->willReturn('[]');
         $response->expects(self::exactly(2))->method('getStatusCode')->willReturn($statusCode);
 
         $this->httpClient->expects(self::once())
@@ -539,7 +598,7 @@ final class ClientTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            "The request to \"products/all\" has returned an unexpected response code \"{$statusCode}\""
+            "The request to \"v1/products/all\" has returned an unexpected response code \"{$statusCode}\""
         );
 
         foreach ($this->apiClient->allProducts() as $product) {
@@ -571,10 +630,24 @@ final class ClientTest extends TestCase
         );
     }
 
-    private function mockApiCall(string $uri, string $mockResponseFilename, string $method = 'get'): void
-    {
+    /**
+     * @param string $uri
+     * @param string $mockResponseFilename
+     * @param string $method
+     * @param array<string,mixed>|null $requestData
+     * @param int $responseStatus
+     * @return void
+     */
+    private function mockApiCall(
+        string $uri,
+        string $mockResponseFilename,
+        string $method = 'get',
+        ?array $requestData = null,
+        int $responseStatus = 200
+    ): void {
         $response = $this->createMock(ResponseInterface::class);
-        $response->expects(self::once())->method('getStatusCode')->willReturn(200);
+        $response->expects(self::once())->method('getHeaderLine')->with('Content-Type')->willReturn('application/json');
+        $response->method('getStatusCode')->willReturn($responseStatus);
         $response->expects(self::once())
             ->method('getBody')
             ->willReturn($this->getMockFileContents($mockResponseFilename))
@@ -582,23 +655,41 @@ final class ClientTest extends TestCase
 
         $this->httpClient->expects(self::once())
             ->method('sendRequest')
-            ->with($this->mockRequest($uri, $method))
+            ->with($this->mockRequest($uri, $method, $requestData))
             ->willReturn($response)
         ;
     }
 
-    private function mockRequest(string $path, string $method = 'get'): MockObject
+    /**
+     * @param string $path
+     * @param string $method
+     * @param array<string,mixed>|null $requestData
+     * @return MockObject&RequestInterface
+     */
+    private function mockRequest(string $path, string $method = 'get', ?array $requestData = null): MockObject
     {
+        $headers = [
+            ['User-Agent', '1cart API Client'],
+            ['Accept', 'application/json'],
+            ['X-Client-Id', 'api client id'],
+            ['X-API-Key', 'api key'],
+        ];
+        if ('get' !== $method) {
+            $headers[] = ['Content-Type', 'application/json'];
+        }
+
+        $bodyConditions = [self::isInstanceOf(StreamInterface::class)];
+        if (null !== $requestData) {
+            $bodyConditions[] = self::callback(
+                static fn (StreamInterface $body): bool
+                    => json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR) == $requestData
+            );
+        }
         $request = $this->createMock(RequestInterface::class);
-        $request->method('withBody')->with(self::isInstanceOf(StreamInterface::class))->willReturn($request);
-        $request->expects(self::exactly(4))
+        $request->method('withBody')->with(self::logicalAnd(...$bodyConditions))->willReturn($request);
+        $request->expects(self::exactly(count($headers)))
             ->method('withHeader')
-            ->withConsecutive(
-                ['User-Agent', '1cart API Client'],
-                ['Accept', 'application/json'],
-                ['X-Client-Id', 'api client id'],
-                ['X-API-Key', 'api key'],
-            )
+            ->withConsecutive(...$headers)
             ->willReturnSelf()
         ;
         $this->messageFactory->expects(self::once())

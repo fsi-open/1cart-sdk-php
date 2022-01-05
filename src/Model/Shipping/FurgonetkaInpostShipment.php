@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Shipping;
 
 use DateTimeImmutable;
+use Money\Money;
 use OneCart\Api\Model\Dimensions;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\Person;
@@ -62,15 +63,15 @@ final class FurgonetkaInpostShipment implements Shipment
      * @param DateTimeImmutable $createdAt
      * @param string $description
      * @param array<int,string> $productIds
-     * @param FormattedMoney $price
-     * @param FormattedMoney|null $codValue
+     * @param Money $price
+     * @param Money|null $codValue
      * @param DateTimeImmutable|null $preparedAt
      * @param DateTimeImmutable|null $deliveredAt
      * @param DateTimeImmutable|null $cancelledAt
      * @param Dimensions $dimensions
      * @param float $weight
      * @param string|null $waybillNumber
-     * @param FormattedMoney|null $surcharge
+     * @param Money|null $surcharge
      * @param string|null $surchargeDescription
      * @param DateTimeImmutable|null $pickedUpAt
      * @param DateTimeImmutable|null $returnedAt
@@ -83,15 +84,15 @@ final class FurgonetkaInpostShipment implements Shipment
         DateTimeImmutable $createdAt,
         string $description,
         array $productIds,
-        FormattedMoney $price,
-        ?FormattedMoney $codValue,
+        Money $price,
+        ?Money $codValue,
         ?DateTimeImmutable $preparedAt,
         ?DateTimeImmutable $deliveredAt,
         ?DateTimeImmutable $cancelledAt,
         Dimensions $dimensions,
         float $weight,
         ?string $waybillNumber,
-        ?FormattedMoney $surcharge,
+        ?Money $surcharge,
         ?string $surchargeDescription,
         ?DateTimeImmutable $pickedUpAt,
         ?DateTimeImmutable $returnedAt,

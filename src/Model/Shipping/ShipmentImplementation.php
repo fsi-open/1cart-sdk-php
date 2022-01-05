@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Shipping;
 
 use DateTimeImmutable;
-use OneCart\Api\Model\FormattedMoney;
+use Money\Money;
 use Ramsey\Uuid\UuidInterface;
 
 trait ShipmentImplementation
@@ -24,8 +24,8 @@ trait ShipmentImplementation
      * @var array<int,string>
      */
     private array $productIds;
-    private FormattedMoney $price;
-    private ?FormattedMoney $codValue;
+    private Money $price;
+    private ?Money $codValue;
     private ?DateTimeImmutable $preparedAt;
     private ?DateTimeImmutable $deliveredAt;
     private ?DateTimeImmutable $cancelledAt;
@@ -53,12 +53,12 @@ trait ShipmentImplementation
         return $this->productIds;
     }
 
-    public function getPrice(): FormattedMoney
+    public function getPrice(): Money
     {
         return $this->price;
     }
 
-    public function getCodValue(): ?FormattedMoney
+    public function getCodValue(): ?Money
     {
         return $this->codValue;
     }
@@ -83,8 +83,8 @@ trait ShipmentImplementation
      * @param DateTimeImmutable $createdAt
      * @param string $description
      * @param array<int,string> $productIds
-     * @param FormattedMoney $price
-     * @param FormattedMoney|null $codValue
+     * @param Money $price
+     * @param Money|null $codValue
      * @param DateTimeImmutable|null $preparedAt
      * @param DateTimeImmutable|null $deliveredAt
      * @param DateTimeImmutable|null $cancelledAt
@@ -95,8 +95,8 @@ trait ShipmentImplementation
         DateTimeImmutable $createdAt,
         string $description,
         array $productIds,
-        FormattedMoney $price,
-        ?FormattedMoney $codValue,
+        Money $price,
+        ?Money $codValue,
         ?DateTimeImmutable $preparedAt,
         ?DateTimeImmutable $deliveredAt,
         ?DateTimeImmutable $cancelledAt

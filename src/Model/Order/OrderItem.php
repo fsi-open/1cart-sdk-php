@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Order;
 
+use Money\Money;
 use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\Product\ProductVersion;
 use Psr\Http\Message\UriFactoryInterface;
@@ -20,8 +21,8 @@ final class OrderItem
     private string $sellerId;
     private ProductVersion $productVersion;
     private int $quantity;
-    private FormattedMoney $total;
-    private FormattedMoney $totalWithoutDiscount;
+    private Money $total;
+    private Money $totalWithoutDiscount;
 
     /**
      * @param array<string,mixed> $data
@@ -42,8 +43,8 @@ final class OrderItem
         string $sellerId,
         ProductVersion $productVersion,
         int $quantity,
-        FormattedMoney $total,
-        FormattedMoney $totalWithoutDiscount
+        Money $total,
+        Money $totalWithoutDiscount
     ) {
         $this->sellerId = $sellerId;
         $this->productVersion = $productVersion;
@@ -67,12 +68,12 @@ final class OrderItem
         return $this->quantity;
     }
 
-    public function getTotal(): FormattedMoney
+    public function getTotal(): Money
     {
         return $this->total;
     }
 
-    public function getTotalWithoutDiscount(): FormattedMoney
+    public function getTotalWithoutDiscount(): Money
     {
         return $this->totalWithoutDiscount;
     }
