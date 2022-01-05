@@ -14,7 +14,7 @@ namespace OneCart\Api\Model;
 use Egulias\EmailValidator\EmailValidator;
 use Egulias\EmailValidator\Validation\EmailValidation;
 use Egulias\EmailValidator\Validation\RFCValidation;
-use RuntimeException;
+use InvalidArgumentException;
 
 final class EmailAddress
 {
@@ -34,7 +34,7 @@ final class EmailAddress
         }
 
         if (true !== self::$emailValidator->isValid($email, self::$emailValidation)) {
-            throw new RuntimeException("Value \"{$email}\" was expected to be a valid e-mail address.");
+            throw new InvalidArgumentException("Value \"{$email}\" was expected to be a valid e-mail address.");
         }
 
         $this->email = $email;

@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model;
 
+use InvalidArgumentException;
+
+use function trim;
+
 final class Person
 {
     private string $givenName;
@@ -41,6 +45,16 @@ final class Person
         ?EmailAddress $email,
         ?PhoneNumber $phoneNumber
     ) {
+        if ('' === trim($givenName)) {
+            throw new InvalidArgumentException('Given name can not be blank');
+        }
+        if ('' === trim($familyName)) {
+            throw new InvalidArgumentException('Family name can not be blank');
+        }
+        if (null !== $organization && '' === trim($organization)) {
+            throw new InvalidArgumentException('Organization can not be blank');
+        }
+
         $this->givenName = $givenName;
         $this->familyName = $familyName;
         $this->organization = $organization;
