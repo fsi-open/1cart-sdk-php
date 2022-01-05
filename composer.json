@@ -17,8 +17,12 @@
     ],
     "require": {
         "php": "^7.4|^8.0",
+        "ext-intl": "*",
         "ext-json": "*",
+        "commerceguys/addressing": "^1.2",
         "commerceguys/enum": "^1.0",
+        "egulias/email-validator": "^3.1",
+        "giggsey/libphonenumber-for-php": "^8.12",
         "moneyphp/money": "^3.1||^4.0",
         "psr/http-client": "^1.0",
         "psr/http-factory": "^1.0",

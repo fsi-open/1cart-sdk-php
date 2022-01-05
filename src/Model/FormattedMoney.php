@@ -14,10 +14,19 @@ namespace OneCart\Api\Model;
 use Money\Currency;
 use Money\Money;
 
-final class ProductPrice
+final class FormattedMoney
 {
-    private Money $moneyObject;
+    private Money $money;
     private string $formatted;
+
+    /**
+     * @param array<array-key,mixed> $data
+     * @return FormattedMoney
+     */
+    public static function fromData(array $data): FormattedMoney
+    {
+        return new FormattedMoney($data['amount'] ?? '', $data['currency'] ?? '', $data['formatted'] ?? '');
+    }
 
     /**
      * @param numeric-string $amount
@@ -26,7 +35,7 @@ final class ProductPrice
      */
     public function __construct(string $amount, string $currency, string $formatted)
     {
-        $this->moneyObject = new Money($amount, new Currency($currency));
+        $this->money = new Money($amount, new Currency($currency));
         $this->formatted = $formatted;
     }
 
@@ -37,6 +46,6 @@ final class ProductPrice
 
     public function asMoneyObject(): Money
     {
-        return $this->moneyObject;
+        return $this->money;
     }
 }

@@ -9,8 +9,8 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Payment;
 
-interface ProductProperties
+interface Payment
 {
 }

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "4dd9d235-f0a1-4423-9230-41b3e33918e6",
+    "number": "2WJ-JJV-JS4-QAP-KD6",
+    "created_at": "2021-12-29T11:40:47+00:00",
+    "customer": {
+      "email": "test@example.com"
+    },
+    "cancelled_at": null,
+    "payment_type": "cod",
+    "shipping_type": "furgonetka-dpd",
+    "total": {
+      "amount": "28098",
+      "currency": "PLN",
+      "formatted": "280,98 zł"
+    },
+    "total_with_shipping": {
+      "amount": "30184",
+      "currency": "PLN",
+      "formatted": "301,84 zł"
+    },
+    "total_with_shipping_without_discount": {
+      "amount": "30184",
+      "currency": "PLN",
+      "formatted": "301,84 zł"
+    },
+    "payment_state": "in_progress",
+    "shipping_state": "not_begun",
+    "comments": "test comment",
+    "contact_person": null,
+    "invoice_data": {
+      "given_name": "Johny",
+      "family_name": "Walker",
+      "organization": "JOHNY WALKER",
+      "tax_id": {
+        "vat_id": "PL6612057750"
+      },
+      "address": {
+        "country_code": "PL",
+        "administrative_area": null,
+        "locality": "Kraków",
+        "dependent_locality": null,
+        "postal_code": "31-323",
+        "sorting_code": null,
+        "street": "Gdyńska",
+        "building_number": "19",
+        "flat_number": "21"
+      }
+    }
+  },
+  {
+    "id": "baf976f5-befc-45c8-b3fe-610395a00335",
+    "number": "3GN-VAV-JUA-5V5-B5P",
+    "created_at": "2021-12-16T15:33:33+00:00",
+    "customer": {
+      "email": "test@example.org"
+    },
+    "cancelled_at": null,
+    "payment_type": "blue_media",
+    "shipping_type": "furgonetka-dpd",
+    "total": {
+      "amount": "23900",
+      "currency": "PLN",
+      "formatted": "239,00 zł"
+    },
+    "total_with_shipping": {
+      "amount": "30185",
+      "currency": "PLN",
+      "formatted": "301,85 zł"
+    },
+    "total_with_shipping_without_discount": {
+      "amount": "30185",
+      "currency": "PLN",
+      "formatted": "301,85 zł"
+    },
+    "payment_state": "completed",
+    "shipping_state": "partially_delivered",
+    "comments": null,
+    "contact_person": null,
+    "invoice_data": null
+  }
+]

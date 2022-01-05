@@ -9,7 +9,10 @@
 
 declare(strict_types=1);
 
-namespace OneCart\Api\Model;
+namespace OneCart\Api\Model\Product;
+
+use OneCart\Api\Model\Dimensions;
+use OneCart\Api\Model\Product\ProductProperties;
 
 final class PhysicalProperties implements ProductProperties
 {

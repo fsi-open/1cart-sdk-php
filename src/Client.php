@@ -11,17 +11,12 @@ declare(strict_types=1);
 
 namespace OneCart\Api;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use Generator;
-use OneCart\Api\Model\DigitalUriProperties;
-use OneCart\Api\Model\Dimensions;
-use OneCart\Api\Model\EuReturnRightsForfeitExtension;
-use OneCart\Api\Model\EuVatExemptionExtension;
-use OneCart\Api\Model\PhysicalProperties;
-use OneCart\Api\Model\PlVatGTUExtension;
-use OneCart\Api\Model\Product;
-use OneCart\Api\Model\ProductExtension;
-use OneCart\Api\Model\ProductPrice;
-use OneCart\Api\Model\ProductProperties;
+use OneCart\Api\Model\Order\Order;
+use OneCart\Api\Model\Order\OrderDetails;
+use OneCart\Api\Model\Product\Product;
 use OneCart\Api\Model\ProductStock;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -29,13 +24,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
 use RuntimeException;
 
-use function array_key_exists;
-use function array_keys;
-use function array_reduce;
+use function http_build_query;
 use function json_encode;
 
 class Client
@@ -79,12 +70,42 @@ class Client
     }
 
     /**
+     * @return Generator<Order>
+     */
+    public function allOrders(
+        ?DateTimeImmutable $createdAtFrom = null,
+        ?DateTimeImmutable $createdAtTo = null
+    ): Generator {
+        $queryData = [];
+        if (null !== $createdAtFrom) {
+            $queryData['created_at_from'] = $createdAtFrom->format(DateTimeInterface::RFC3339);
+        }
+        if (null !== $createdAtTo) {
+            $queryData['created_at_to'] = $createdAtTo->format(DateTimeInterface::RFC3339);
+        }
+        foreach ($this->sendRequest('get', 'orders/all', null, $queryData) as $order) {
+            yield $order['number'] => Order::fromData($order);
+        }
+    }
+
+    /**
+     * @param array<int,string> $ordersNumbers
+     * @return Generator<OrderDetails>
+     */
+    public function ordersDetails(array $ordersNumbers): Generator
+    {
+        foreach ($this->sendRequest('post', 'orders', $ordersNumbers) as $order) {
+            yield $order['number'] => OrderDetails::fromData($order, $this->uriFactory);
+        }
+    }
+
+    /**
      * @return Generator<Product>
      */
     public function allProducts(): Generator
     {
         foreach ($this->sendRequest('get', 'products/all') as $product) {
-            yield $product['seller_id'] => $this->parseProduct($product);
+            yield $product['seller_id'] => Product::fromData($product, $this->uriFactory);
         }
     }
 
@@ -95,27 +116,34 @@ class Client
     public function products(array $identities): Generator
     {
         foreach ($this->sendRequest('post', 'products', $identities) as $product) {
-            yield $product['seller_id'] => $this->parseProduct($product);
+            yield $product['seller_id'] => Product::fromData($product, $this->uriFactory);
         }
     }
 
     /**
      * @param string $method
      * @param string $path
-     * @param array<array-key,mixed>|null $data
+     * @param array<array-key,mixed>|null $bodyData
+     * @param array<array-key,mixed>|null $queryData
      * @return array<array-key,mixed>
      */
-    private function sendRequest(string $method, string $path, ?array $data = null): array
+    private function sendRequest(string $method, string $path, ?array $bodyData = null, ?array $queryData = null): array
     {
+        $uri = $this->buildUri($path);
+        if (null !== $queryData && 0 !== count($queryData)) {
+            $uri = $uri->withQuery(http_build_query($queryData));
+        }
         $request = $this->requestFactory
-            ->createRequest($method, $this->buildUri($path))
+            ->createRequest($method, $uri)
             ->withHeader('User-Agent', '1cart API Client')
             ->withHeader('Accept', 'application/json')
             ->withHeader('X-Client-Id', $this->apiClientId)
             ->withHeader('X-API-Key', $this->apiKey)
         ;
-        if (null !== $data) {
-            $request = $request->withBody($this->streamFactory->createStream(json_encode($data, JSON_THROW_ON_ERROR)));
+        if (null !== $bodyData) {
+            $request = $request->withBody(
+                $this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR))
+            );
         }
 
         $response = $this->httpClient->sendRequest($request);
@@ -155,103 +183,5 @@ class Client
     private function buildUri(string $path): UriInterface
     {
         return $this->baseUri->withPath(trim($this->baseUri->getPath(), '/') . '/' . trim($path, '/'));
-    }
-
-    /**
-     * @param array<string,mixed> $productData
-     * @return Product
-     */
-    private function parseProduct(array $productData): Product
-    {
-        $pageUri = (true === array_key_exists('page_uri', $productData))
-            ? $this->uriFactory->createUri($productData['page_uri'])
-            : null;
-
-        $imageThumbnailUri = (true === array_key_exists('image_thumbnail', $productData))
-            ? $this->uriFactory->createUri($productData['image_thumbnail'])
-            : null;
-
-        return new Product(
-            Uuid::fromString($productData['id']),
-            $productData['seller_id'],
-            $productData['name'],
-            $productData['disabled'],
-            $pageUri,
-            $imageThumbnailUri,
-            $this->uriFactory->createUri($productData['short_code_uri']),
-            new ProductPrice(
-                $productData['price']['amount'],
-                $productData['price']['currency'],
-                $productData['price']['formatted']
-            ),
-            $productData['tax_rate'],
-            array_map(static fn(string $uuid): UuidInterface => Uuid::fromString($uuid), $productData['suppliers']),
-            $this->parseProductProperties($productData['properties'] ?? null),
-            $this->parseProductExtensions($productData['extensions'] ?? [])
-        );
-    }
-
-    /**
-     * @param array<string,mixed>|null $properties
-     * @return ProductProperties|null
-     */
-    private function parseProductProperties(?array $properties): ?ProductProperties
-    {
-        if (null === $properties) {
-            return null;
-        }
-
-        switch ($properties['type'] ?? null) {
-            case 'digital-uri':
-                return new DigitalUriProperties($this->uriFactory->createUri($properties['uri']));
-
-            case 'physical':
-                return new PhysicalProperties(
-                    new Dimensions(
-                        $properties['dimensions']['length'],
-                        $properties['dimensions']['width'],
-                        $properties['dimensions']['height']
-                    ),
-                    $properties['weight']
-                );
-        }
-
-        throw new RuntimeException("Unknown product properties of type {$properties['type']}");
-    }
-
-    /**
-     * @param string $extensionKey
-     * @param array<string,mixed> $extensionData
-     * @return ProductExtension
-     */
-    private function parseProductExtension(string $extensionKey, array $extensionData): ProductExtension
-    {
-        switch ($extensionKey) {
-            case 'eu_vat_exemption':
-                return new EuVatExemptionExtension($extensionData['vat_exemption'] ?? '');
-            case 'eu_return_rights_forfeit':
-                return new EuReturnRightsForfeitExtension($extensionData['forfeit_required'] ?? false);
-            case 'pl_vat_gtu_code':
-                return new PlVatGTUExtension($extensionData['vat_gtu_code'] ?? null);
-        }
-
-        throw new RuntimeException("Unknown product extension of type {$extensionKey}");
-    }
-
-    /**
-     * @param array<string,mixed> $extensionsData
-     * @return array<ProductExtension>
-     */
-    private function parseProductExtensions(array $extensionsData): array
-    {
-        return array_reduce(
-            array_keys($extensionsData),
-            function (array $parsedExtensions, string $extensionKey) use (&$extensionsData): array {
-                $parsedExtensions[] = $this->parseProductExtension($extensionKey, $extensionsData[$extensionKey]);
-
-                return $parsedExtensions;
-            },
-            []
-        );
     }
 }
