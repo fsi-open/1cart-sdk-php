@@ -36,7 +36,6 @@ use Symfony\Component\Mime\Part\DataPart;
 use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 
 use function array_map;
-use function array_merge_recursive;
 use function array_walk;
 use function get_class;
 use function http_build_query;
@@ -92,7 +91,7 @@ class Client
             'callbackUrl' => (string) $uri,
             'events' => $events
         ];
-        foreach ($this->sendRequest('post', 'subscription', $requestData) as $subscription) {
+        foreach ($this->sendRequest('POST', 'subscription', $requestData) as $subscription) {
             yield $subscription['id'] => Subscription::fromData($subscription, $this->uriFactory);
         }
     }
@@ -115,7 +114,7 @@ class Client
      */
     public function allStocks(): Generator
     {
-        foreach ($this->sendRequest('get', 'stocks/all') as $stock) {
+        foreach ($this->sendRequest('GET', 'stocks/all') as $stock) {
             yield $stock['seller_id'] => new ProductStock($stock['seller_id'], $stock['available_quantity']);
         }
     }
@@ -134,7 +133,7 @@ class Client
         if (null !== $createdAtTo) {
             $queryData['created_at_to'] = $createdAtTo->format(DateTimeInterface::RFC3339);
         }
-        foreach ($this->sendRequest('get', 'orders/all', null, $queryData) as $order) {
+        foreach ($this->sendRequest('GET', 'orders/all', null, $queryData) as $order) {
             yield $order['number'] => Order::fromData($order);
         }
     }
@@ -145,7 +144,7 @@ class Client
      */
     public function ordersDetails(array $ordersNumbers): Generator
     {
-        foreach ($this->sendRequest('post', 'orders', $ordersNumbers) as $order) {
+        foreach ($this->sendRequest('POST', 'orders', $ordersNumbers) as $order) {
             yield $order['number'] => OrderDetails::fromData($order, $this->uriFactory);
         }
     }
@@ -155,7 +154,7 @@ class Client
      */
     public function allProducts(): Generator
     {
-        foreach ($this->sendRequest('get', 'products/all') as $product) {
+        foreach ($this->sendRequest('GET', 'products/all') as $product) {
             yield $product['seller_id'] => Product::fromData($product, $this->uriFactory);
         }
     }
@@ -166,7 +165,7 @@ class Client
      */
     public function products(array $identities): Generator
     {
-        foreach ($this->sendRequest('post', 'products', $identities) as $product) {
+        foreach ($this->sendRequest('POST', 'products', $identities) as $product) {
             yield $product['seller_id'] => Product::fromData($product, $this->uriFactory);
         }
     }
@@ -190,7 +189,7 @@ class Client
             $requestData['suppliers'] = $suppliersIds;
         }
 
-        $responseData = $this->sendRequest('post', 'product', $requestData);
+        $responseData = $this->sendRequest('POST', 'product', $requestData);
 
         return Product::fromData($responseData, $this->uriFactory);
     }
@@ -213,7 +212,7 @@ class Client
             $requestData['suppliers'] = $suppliersIds;
         }
 
-        $responseData = $this->sendRequest('put', "product/{$sellerId}", $requestData);
+        $responseData = $this->sendRequest('PUT', "product/{$sellerId}", $requestData);
 
         return Product::fromData($responseData, $this->uriFactory);
     }
@@ -229,7 +228,7 @@ class Client
             'image' => new DataPart($imageData, $filename, $mimeType)
         ];
 
-        $request = $this->createRequest($this->buildUri("product/{$sellerId}/image"), 'post');
+        $request = $this->createRequest($this->buildUri("product/{$sellerId}/image"), 'POST');
         $request = $this->buildFormDataRequest($request, $formData);
 
         $response = $this->httpClient->sendRequest($request);
