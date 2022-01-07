@@ -106,7 +106,7 @@ class Client
             $subscriptionIds
         );
 
-        $this->sendRequest('delete', 'subscription', $requestData);
+        $this->sendRequest('DELETE', 'subscription', $requestData);
     }
 
     /**
