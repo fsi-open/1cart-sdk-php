@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Api;
 
-use DateTimeImmutable;
 use DateTimeInterface;
 use Laminas\Diactoros\StreamFactory;
 use Laminas\Diactoros\UriFactory;
@@ -31,7 +30,6 @@ use OneCart\Api\Model\Product\EuVatExemptionExtension;
 use OneCart\Api\Model\Product\PhysicalProperties;
 use OneCart\Api\Model\Product\PlVatGTUExtension;
 use OneCart\Api\Model\Product\Product;
-use OneCart\Api\Model\FormattedMoney;
 use OneCart\Api\Model\Product\ProductVersion;
 use OneCart\Api\Model\ProductStock;
 use OneCart\Api\Model\Shipping\FurgonetkaDpdShipment;
@@ -176,7 +174,7 @@ final class ClientTest extends TestCase
 
     public function testOrderDetails(): void
     {
-        $this->mockApiCall('orders', 'order-details.json', 'post');
+        $this->mockApiCall('orders', 'order-details.json', 'POST');
 
         $orders = iterator_to_array($this->apiClient->ordersDetails(['3GN-VAV-JUA-5V5-B5P']));
 
@@ -465,7 +463,7 @@ final class ClientTest extends TestCase
 
     public function testProducts(): void
     {
-        $this->mockApiCall('products', 'products.json', 'post');
+        $this->mockApiCall('products', 'products.json', 'POST');
 
         $products = [];
         foreach ($this->apiClient->products(['product1', 'product2']) as $sellerId => $product1) {
@@ -540,7 +538,7 @@ final class ClientTest extends TestCase
             'extensions' => [],
             'disabled' => false,
         ];
-        $this->mockApiCall('product', 'product-errors.json', 'post', $expectedRequestData, 400);
+        $this->mockApiCall('product', 'product-errors.json', 'POST', $expectedRequestData, 400);
 
         try {
             $this->apiClient->createProduct(
@@ -560,7 +558,7 @@ final class ClientTest extends TestCase
 
     public function testProductCreation(): void
     {
-        $this->mockApiCall('product', 'product.json', 'post');
+        $this->mockApiCall('product', 'product.json', 'POST');
 
         $product = $this->apiClient->createProduct(
             'test',
@@ -571,7 +569,7 @@ final class ClientTest extends TestCase
 
     public function testProductUpdate(): void
     {
-        $this->mockApiCall('product/test', 'product.json', 'put');
+        $this->mockApiCall('product/test', 'product.json', 'PUT');
 
         $product = $this->apiClient->updateProduct(
             'test',
@@ -641,7 +639,7 @@ final class ClientTest extends TestCase
     private function mockApiCall(
         string $uri,
         string $mockResponseFilename,
-        string $method = 'get',
+        string $method = 'GET',
         ?array $requestData = null,
         int $responseStatus = 200
     ): void {
@@ -666,7 +664,7 @@ final class ClientTest extends TestCase
      * @param array<string,mixed>|null $requestData
      * @return MockObject&RequestInterface
      */
-    private function mockRequest(string $path, string $method = 'get', ?array $requestData = null): MockObject
+    private function mockRequest(string $path, string $method = 'GET', ?array $requestData = null): MockObject
     {
         $headers = [
             ['User-Agent', '1cart API Client'],
@@ -674,7 +672,7 @@ final class ClientTest extends TestCase
             ['X-Client-Id', 'api client id'],
             ['X-API-Key', 'api key'],
         ];
-        if ('get' !== $method) {
+        if ('GET' !== $method) {
             $headers[] = ['Content-Type', 'application/json'];
         }
 
