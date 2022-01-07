@@ -15,6 +15,7 @@ use DateInterval;
 use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
+use JsonException;
 use OneCart\Api\Model\Order\OrderDetails;
 use OneCart\Api\Model\Subscription\Event;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -32,9 +33,12 @@ use function hash;
 use function hash_equals;
 use function hash_hmac;
 use function is_array;
+use function json_decode;
 use function mb_strtolower;
 use function preg_match;
 use function sprintf;
+
+use const JSON_THROW_ON_ERROR;
 
 final class CallbackReceiver
 {
@@ -94,7 +98,14 @@ final class CallbackReceiver
             ;
         }
 
-        $requestData = $request->getParsedBody();
+        try {
+            $requestData = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $jsonException) {
+            return $this->responseFactory->createResponse(400)
+                ->withBody($this->streamFactory->createStream('BODY DECODING ERROR'))
+            ;
+        }
+
         if (false === is_array($requestData)) {
             return $this->responseFactory->createResponse(400)
                 ->withBody($this->streamFactory->createStream('BODY FORMAT ERROR'))
