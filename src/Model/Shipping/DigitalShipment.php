@@ -37,7 +37,7 @@ final class DigitalShipment implements Shipment
             $data['description'],
             $data['items'],
             FormattedMoney::fromData($data['price'] ?? []),
-            FormattedMoney::fromData($data['cod_price'] ?? []),
+            (null !== ($data['cod_price'] ?? null)) ? FormattedMoney::fromData($data['cod_price']) : null,
             (null !== ($data['prepared_at'] ?? null)) ? new DateTimeImmutable($data['prepared_at']) : null,
             (null !== ($data['delivered_at'] ?? null)) ? new DateTimeImmutable($data['delivered_at']) : null,
             (null !== ($data['cancelled_at'] ?? null)) ? new DateTimeImmutable($data['cancelled_at']) : null,
