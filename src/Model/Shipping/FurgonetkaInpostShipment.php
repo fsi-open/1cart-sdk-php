@@ -52,8 +52,8 @@ final class FurgonetkaInpostShipment implements Shipment
             $data['surcharge_description'] ?? null,
             (null !== ($data['returned_at'] ?? null)) ? new DateTimeImmutable($data['returned_at']) : null,
             (null !== ($data['picked_up_at'] ?? null)) ? new DateTimeImmutable($data['picked_up_at']) : null,
-            $data['sender_point'] ?? '',
-            $data['recipient_point'] ?? '',
+            $data['sender_point']['id'] ?? '',
+            $data['recipient_point']['id'] ?? '',
             Person::fromData($data['recipient'])
         );
     }
