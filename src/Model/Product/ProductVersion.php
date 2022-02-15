@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
+use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonSerializable;
 use Money\Money;
@@ -153,6 +154,12 @@ final class ProductVersion implements JsonSerializable
         switch ($properties['type'] ?? null) {
             case 'digital-uri':
                 return new DigitalUriProperties($uriFactory->createUri($properties['uri']));
+
+            case 'digital-file':
+                return new DigitalFileProperties(
+                    $uriFactory->createUri($properties['uri']),
+                    new DateTimeImmutable($properties['expires_at'])
+                );
 
             case 'physical':
                 return new PhysicalProperties(
