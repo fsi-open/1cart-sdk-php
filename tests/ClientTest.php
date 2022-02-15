@@ -47,8 +47,10 @@ use Psr\Http\Message\UriInterface;
 use RuntimeException;
 
 use function count;
+use function file_get_contents;
 use function fopen;
 use function get_class;
+use function is_array;
 use function iterator_to_array;
 use function json_decode;
 use function sort;
@@ -553,7 +555,7 @@ final class ClientTest extends TestCase
         try {
             $this->apiClient->createProduct(
                 'test',
-                new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+                new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
             );
         } catch (ApiException $exception) {
             self::assertEquals(
@@ -572,7 +574,7 @@ final class ClientTest extends TestCase
 
         $product = $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
         );
         self::assertEquals('Yellow T-Shirt XXL', $product->getName());
     }
@@ -583,69 +585,28 @@ final class ClientTest extends TestCase
 
         $product = $this->apiClient->updateProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
         );
         self::assertEquals('Yellow T-Shirt XXL', $product->getName());
     }
 
     public function testProductDigitalFileCreation(): void
     {
-        $createHeaders = self::HEADERS;
-        $createHeaders[] = ['Content-Type', 'application/json'];
-        $createRequest = $this->createRequest($createHeaders, null);
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $fileRequest = $this->createRequestMock($this->createRequestHeadersArray('multipart/form-data'), null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
 
-        $fileHeaders = self::HEADERS;
-        $fileHeaders[] = ['Content-Type', 'multipart/form-data'];
-        $fileRequest = $this->createRequest($fileHeaders, null);
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['PUT', 'https://api.1cart.eu/v1/product/test/product-digital-file'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $fileRequest, $productRequest]
+        );
 
-        $productHeaders = self::HEADERS;
-        $productHeaders[] = ['Content-Type', 'application/json'];
-        $productRequest = $this->createRequest($productHeaders, null);
-
-        $this->messageFactory->expects(self::exactly(3))
-            ->method('createRequest')
-            ->withConsecutive(
-                [
-                    'POST',
-                    self::callback(
-                        static fn(UriInterface $uri): bool => 'https://api.1cart.eu/v1/product' === (string) $uri
-                    )
-                ],
-                [
-                    'PUT',
-                    self::callback(
-                        static fn(UriInterface $uri): bool
-                            => 'https://api.1cart.eu/v1/product/test/product-digital-file' === (string) $uri
-                    )
-                ],
-                [
-                    'POST',
-                    self::callback(
-                        static fn(UriInterface $uri): bool => 'https://api.1cart.eu/v1/products' === (string) $uri
-                    )
-                ]
-            )
-            ->willReturnOnConsecutiveCalls($createRequest, $fileRequest, $productRequest)
-        ;
-
-        $createResponse = $this->createMock(ResponseInterface::class);
-        $createResponse->expects(self::once())->method('getHeaderLine')->with('Content-Type')->willReturn('application/json');
-        $createResponse->method('getStatusCode')->willReturn(200);
-        $createResponse->expects(self::once())
-            ->method('getBody')
-            ->willReturn($this->getMockFileContents('product-digital-uri.json'))
-        ;
-
-        $productResponse = $this->createMock(ResponseInterface::class);
-        $productResponse->expects(self::exactly(2))->method('getHeaderLine')->with('Content-Type')->willReturn('application/json');
-        $productResponse->method('getStatusCode')->willReturn(200);
-        $productResponse->expects(self::exactly(2))
-            ->method('getBody')
-            ->willReturnOnConsecutiveCalls(
-                $this->getMockFileContents('product-digital-file.json'),
-                $this->getMockFileContents('products-with-digital-file.json')
-            )
-        ;
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-file.json', 'product-with-digital-file.json']);
 
         $this->httpClient->expects(self::exactly(3))
             ->method('sendRequest')
@@ -655,11 +616,12 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [])
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
+        /** @var resource $fileHandle */
         $fileHandle = fopen(__DIR__ . '/fixtures/image.jpg', 'r');
-        $this->apiClient->updateProductDigitalProperties(
+        $this->apiClient->updateProductDigitalFile(
             'test',
             new Stream($fileHandle),
             'image.jpg'
@@ -671,6 +633,245 @@ final class ClientTest extends TestCase
             self::assertInstanceOf(DigitalFileProperties::class, $properties);
             self::assertInstanceOf(DateTimeImmutable::class, $properties->getExpiresAt());
             self::assertInstanceOf(UriInterface::class, $properties->getUri());
+        }
+    }
+
+    public function testAddingImageAtTheEnd(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock($this->createRequestHeadersArray('multipart/form-data'), null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['POST', 'https://api.1cart.eu/v1/product/test/image'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-images.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        /** @var resource $fileHandle */
+        $fileHandle = fopen(__DIR__ . '/fixtures/image.jpg', 'r');
+        $this->apiClient->addImage('test', new Stream($fileHandle), 'image.jpg');
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(2, $images);
+            self::assertSame(0, $images[0]->getPosition());
+            self::assertSame(1, $images[1]->getPosition());
+        }
+    }
+
+    public function testAddingImageAtASpecifiedPosition(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock($this->createRequestHeadersArray('multipart/form-data'), null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['POST', 'https://api.1cart.eu/v1/product/test/image/0'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-images.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        /** @var resource $fileHandle */
+        $fileHandle = fopen(__DIR__ . '/fixtures/image.jpg', 'r');
+        $this->apiClient->addImageAtPosition('test', new Stream($fileHandle), 0, 'image.jpg');
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(2, $images);
+            self::assertSame(0, $images[0]->getPosition());
+            self::assertSame(1, $images[1]->getPosition());
+        }
+    }
+
+    public function testReplacingImageAtASpecifiedPosition(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock($this->createRequestHeadersArray('multipart/form-data'), null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['PUT', 'https://api.1cart.eu/v1/product/test/image/0'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-images.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        /** @var resource $fileHandle */
+        $fileHandle = fopen(__DIR__ . '/fixtures/image.jpg', 'r');
+        $this->apiClient->replaceImageAtPosition('test', new Stream($fileHandle), 0, 'image.jpg');
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(2, $images);
+            self::assertSame(0, $images[0]->getPosition());
+            self::assertSame(1, $images[1]->getPosition());
+        }
+    }
+
+    public function testMovingAnImage(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock(self::HEADERS, null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['POST', 'https://api.1cart.eu/v1/product/test/image/0/move'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-images.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        $this->apiClient->moveImage('test', 0);
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(2, $images);
+            self::assertSame(0, $images[0]->getPosition());
+            self::assertSame(1, $images[1]->getPosition());
+        }
+    }
+
+    public function testMovingAnImageToDestination(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock(self::HEADERS, null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['POST', 'https://api.1cart.eu/v1/product/test/image/0/move/1'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-images.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        $this->apiClient->moveImageInDirection('test', 0, 1);
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(2, $images);
+            self::assertSame(0, $images[0]->getPosition());
+            self::assertSame(1, $images[1]->getPosition());
+        }
+    }
+
+    public function testDeletingImageAtAPosition(): void
+    {
+        $createRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+        $imageRequest = $this->createRequestMock(self::HEADERS, null);
+        $productRequest = $this->createRequestMock($this->createRequestHeadersArray('application/json'), null);
+
+        $this->mockMessageFactoryCalls(
+            [
+                ['POST', 'https://api.1cart.eu/v1/product'],
+                ['DELETE', 'https://api.1cart.eu/v1/product/test/image/0'],
+                ['POST', 'https://api.1cart.eu/v1/products']
+            ],
+            [$createRequest, $imageRequest, $productRequest]
+        );
+
+        $createResponse = $this->mockResponse('product-digital-uri.json');
+        $productResponse = $this->mockResponse(['product-digital-uri.json', 'product-with-image.json']);
+
+        $this->httpClient->expects(self::exactly(3))
+            ->method('sendRequest')
+            ->withConsecutive([$createRequest], [$imageRequest], [$productRequest])
+            ->willReturnOnConsecutiveCalls($createResponse, $productResponse, $productResponse)
+        ;
+
+        $this->apiClient->createProduct(
+            'test',
+            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+        );
+
+        $this->apiClient->deleteImageAtPosition('test', 0);
+
+        foreach ($this->apiClient->products(['test']) as $product) {
+            $images = $product->getImages();
+            self::assertCount(1, $images);
+            self::assertSame(0, $images[0]->getPosition());
         }
     }
 
@@ -755,22 +956,26 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * @param string|array<string> $path
-     * @param string|array<string> $method
+     * @param string $path
+     * @param string $method
      * @param array<string,mixed>|null $requestData
      * @return MockObject&RequestInterface
      */
-    private function mockRequest($path, $method = 'GET', ?array $requestData = null): MockObject
+    private function mockRequest(string $path, string $method = 'GET', ?array $requestData = null): MockObject
     {
-        $headers = $this->createRequestHeadersArray($method);
-        $request = $this->createRequest($headers, $requestData);
+        $headers = self::HEADERS;
+        if ('GET' !== $method) {
+            $headers[] = ['Content-Type', 'application/json'];
+        }
+
+        $request = $this->createRequestMock($headers, $requestData);
 
         $this->messageFactory->expects(self::once())
             ->method('createRequest')
             ->with(
                 $method,
                 self::callback(
-                    static fn(UriInterface $uri): bool => (string) $uri === sprintf('https://api.1cart.eu/v1/%s', $path)
+                    static fn(UriInterface $uri): bool => "https://api.1cart.eu/v1/{$path}" === (string) $uri
                 )
             )
             ->willReturn($request)
@@ -780,12 +985,67 @@ final class ClientTest extends TestCase
     }
 
     /**
+     * @param array<array{ 0: string, 1: string }> $calls
+     * @param array<RequestInterface> $returnedRequests
+     * @return void
+     */
+    private function mockMessageFactoryCalls(array $calls, array $returnedRequests): void
+    {
+        $expectedCalls = array_map(
+            static fn(array $call): array => [
+                $call[0],
+                self::callback(
+                    fn(UriInterface $uri): bool => $call[1] === (string) $uri
+                )
+            ],
+            $calls
+        );
+
+        $this->messageFactory->expects(self::exactly(count($calls)))
+            ->method('createRequest')
+            ->withConsecutive(...$expectedCalls)
+            ->willReturnOnConsecutiveCalls(...$returnedRequests)
+        ;
+    }
+
+    /**
+     * @param array<string>|string $responseFiles
+     * @return MockObject&ResponseInterface
+     */
+    private function mockResponse($responseFiles): MockObject
+    {
+        if (false === is_array($responseFiles)) {
+            $responseFiles = [$responseFiles];
+        }
+
+        $responseFilesContents = array_map(
+            fn(string $responseFile): string => $this->getMockFileContents($responseFile),
+            $responseFiles
+        );
+
+        $callCount = count($responseFiles);
+
+        $response = $this->createMock(ResponseInterface::class);
+        $response->expects(self::exactly($callCount))
+            ->method('getHeaderLine')
+            ->with('Content-Type')
+            ->willReturn('application/json')
+        ;
+        $response->method('getStatusCode')->willReturn(200);
+        $response->expects(self::exactly($callCount))
+            ->method('getBody')
+            ->willReturn(...$responseFilesContents)
+        ;
+
+        return $response;
+    }
+
+    /**
      * @param array<array<string>> $headers
      * @param array<string,mixed>|null $requestData
-     * @param StreamInterface $body
      * @return MockObject&RequestInterface
      */
-    private function createRequest(array $headers, ?array $requestData): MockObject
+    private function createRequestMock(array $headers, ?array $requestData): MockObject
     {
         $bodyConditions = [self::isInstanceOf(StreamInterface::class)];
         if (null !== $requestData) {
@@ -807,15 +1067,13 @@ final class ClientTest extends TestCase
     }
 
     /**
-     * @param string $method
+     * @param string $contentType
      * @return array<array<string>>
      */
-    private function createRequestHeadersArray(string $method): array
+    private function createRequestHeadersArray(string $contentType): array
     {
         $headers = self::HEADERS;
-        if ('GET' !== $method) {
-            $headers[] = ['Content-Type', 'application/json'];
-        }
+        $headers[] = ['Content-Type', $contentType];
 
         return $headers;
     }

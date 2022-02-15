@@ -236,13 +236,108 @@ class Client
         $this->parseResponse($this->buildUri('product'), $response);
     }
 
-    public function updateProductDigitalProperties(string $sellerId, StreamInterface $fileStream, ?string $filename): void
-    {
+    public function updateProductDigitalFile(
+        string $sellerId,
+        StreamInterface $fileStream,
+        ?string $filename
+    ): void {
         $uri = $this->buildUri("product/{$sellerId}/product-digital-file");
 
         $request = $this->buildFormDataRequest(
             $this->createRequest($uri, 'PUT'),
             ['files' => ['file' => $this->createFileDataPart($fileStream, $filename)]]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function addImage(string $sellerId, StreamInterface $imageStream, ?string $filename): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function addImageAtPosition(
+        string $sellerId,
+        StreamInterface $imageStream,
+        int $position,
+        ?string $filename
+    ): void {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function replaceImageAtPosition(
+        string $sellerId,
+        StreamInterface $imageStream,
+        int $position,
+        ?string $filename
+    ): void {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'PUT'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function deleteImageAtPosition(string $sellerId, int $position): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'DELETE'),
+            null
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function moveImage(string $sellerId, int $position): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}/move");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            null
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function moveImageInDirection(string $sellerId, int $position, int $destination): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}/move/{$destination}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            null
         );
 
         $response = $this->httpClient->sendRequest($request);

@@ -136,4 +136,12 @@ final class Product
     {
         return $this->version->getExtensions();
     }
+
+    /**
+     * @return array<ProductImage>
+     */
+    public function getImages(): array
+    {
+        return $this->version->getImages();
+    }
 }

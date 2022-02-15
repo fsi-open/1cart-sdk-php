@@ -11,8 +11,8 @@
       "tax_rate": 23,
       "properties": {
         "type": "digital-file",
-          "uri": "https://xxx.s3.xxx.xx//digitalfile/xxx/xxx/xxx/xxxxxxxxxxxxxxxxxxxxxxx/file.jpg?X-Amz-Content-Sha256=xxx&X-Amz-Algorithm=xxx&X-Amz-Credential=xxx%2xxx%2Fs3%2Fxxx&X-Amz-Date=xxx&X-Amz-SignedHeaders=xxx&X-Amz-Expires=xxx&X-Amz-Signature=xxx",
-          "expires_at": "2022-02-01T10:05:00+01:00"
+        "uri": "https://xxx.s3.xxx.xx//digitalfile/xxx/xxx/xxx/xxxxxxxxxxxxxxxxxxxxxxx/file.jpg?X-Amz-Content-Sha256=xxx&X-Amz-Algorithm=xxx&X-Amz-Credential=xxx%2xxx%2Fs3%2Fxxx&X-Amz-Date=xxx&X-Amz-SignedHeaders=xxx&X-Amz-Expires=xxx&X-Amz-Signature=xxx",
+        "expires_at": "2022-02-01T10:05:00+01:00"
       },
       "extensions": {
         "eu_vat_exemption": {
