@@ -44,11 +44,15 @@ use function json_decode;
 use function json_encode;
 use function sprintf;
 
+use const FILEINFO_MIME_TYPE;
 use const JSON_THROW_ON_ERROR;
 
 class Client
 {
     public const CURRENT_VERSION_API_URI = 'https://api.1cart.eu/v1';
+
+    private const CONTENT_TYPE_MULTIPART_FORM_DATA = 'multipart/form-data';
+    private const CONTENT_TYPE_APPLICATION_JSON = 'application/json';
 
     private ClientInterface $httpClient;
     private RequestFactoryInterface $requestFactory;
@@ -91,6 +95,7 @@ class Client
             'callbackUrl' => (string) $uri,
             'events' => $events
         ];
+
         foreach ($this->sendRequest('POST', 'subscription', $requestData) as $subscription) {
             yield $subscription['id'] => Subscription::fromData($subscription, $this->uriFactory);
         }
@@ -130,9 +135,11 @@ class Client
         if (null !== $createdAtFrom) {
             $queryData['created_at_from'] = $createdAtFrom->format(DateTimeInterface::RFC3339);
         }
+
         if (null !== $createdAtTo) {
             $queryData['created_at_to'] = $createdAtTo->format(DateTimeInterface::RFC3339);
         }
+
         foreach ($this->sendRequest('GET', 'orders/all', null, $queryData) as $order) {
             yield $order['number'] => Order::fromData($order);
         }
@@ -219,17 +226,119 @@ class Client
 
     public function updateProductImage(string $sellerId, StreamInterface $imageStream, ?string $filename): void
     {
-        $imageData = (string) $imageStream;
-        $mimeType = (new finfo())->buffer($imageData);
-        if (false === $mimeType) {
-            throw new RuntimeException("Unable to determine mime type of image");
-        }
-        $formData = [
-            'image' => new DataPart($imageData, $filename, $mimeType)
-        ];
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($this->buildUri("product/{$sellerId}/image"), 'POST'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
 
-        $request = $this->createRequest($this->buildUri("product/{$sellerId}/image"), 'POST');
-        $request = $this->buildFormDataRequest($request, $formData);
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function updateProductDigitalFile(
+        string $sellerId,
+        StreamInterface $fileStream,
+        ?string $filename
+    ): void {
+        $uri = $this->buildUri("product/{$sellerId}/product-digital-file");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'PUT'),
+            ['files' => ['file' => $this->createFileDataPart($fileStream, $filename)]]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function addImage(string $sellerId, StreamInterface $imageStream, ?string $filename): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function addImageAtPosition(
+        string $sellerId,
+        StreamInterface $imageStream,
+        int $position,
+        ?string $filename
+    ): void {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function replaceImageAtPosition(
+        string $sellerId,
+        StreamInterface $imageStream,
+        int $position,
+        ?string $filename
+    ): void {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'PUT'),
+            ['image' => $this->createFileDataPart($imageStream, $filename)]
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function deleteImageAtPosition(string $sellerId, int $position): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'DELETE'),
+            null
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function moveImage(string $sellerId, int $position): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}/move");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            null
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+
+        $this->parseResponse($this->buildUri('product'), $response);
+    }
+
+    public function moveImageInDirection(string $sellerId, int $position, int $destination): void
+    {
+        $uri = $this->buildUri("product/{$sellerId}/image/{$position}/move/{$destination}");
+
+        $request = $this->buildFormDataRequest(
+            $this->createRequest($uri, 'POST'),
+            null
+        );
 
         $response = $this->httpClient->sendRequest($request);
 
@@ -322,8 +431,11 @@ class Client
             return $request;
         }
 
-        return $request->withHeader('Content-Type', 'application/json')
-            ->withBody($this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR)))
+        return $request
+            ->withHeader('Content-Type', self::CONTENT_TYPE_APPLICATION_JSON)
+            ->withBody(
+                $this->streamFactory->createStream(json_encode($bodyData, JSON_THROW_ON_ERROR))
+            )
         ;
     }
 
@@ -340,7 +452,8 @@ class Client
 
         $formDataPart = new FormDataPart($formData);
 
-        return $request->withHeader('Content-Type', 'multipart/form-data')
+        return $request
+            ->withHeader('Content-Type', self::CONTENT_TYPE_MULTIPART_FORM_DATA)
             ->withBody($this->streamFactory->createStream($formDataPart->bodyToString()))
         ;
     }
@@ -352,28 +465,40 @@ class Client
      */
     private function parseResponse(UriInterface $uri, ResponseInterface $response): array
     {
-        if ('application/json' === $response->getHeaderLine('Content-Type')) {
+        $contentType = $response->getHeaderLine('Content-Type');
+        if (self::CONTENT_TYPE_APPLICATION_JSON === $contentType) {
             $responseData = $this->decodeBody($response);
         } else {
-            throw new RuntimeException(
-                sprintf(
-                    'Expected response of type "application/json" but got "%s"',
-                    $response->getHeaderLine('Content-Type')
-                )
-            );
+            throw new RuntimeException(sprintf(
+                'Expected response of type "%s" but got "%s"',
+                self::CONTENT_TYPE_APPLICATION_JSON,
+                $contentType
+            ));
         }
 
-        if (200 !== $response->getStatusCode()) {
+        $statusCode = $response->getStatusCode();
+        if (200 !== $statusCode) {
             throw new ApiException(
                 sprintf(
                     'The request to "%s" has returned an unexpected response code "%s"',
                     $uri->getPath(),
-                    $response->getStatusCode()
+                    $statusCode
                 ),
                 $this->parseResponseErrors($responseData['errors'] ?? [])
             );
         }
 
         return $responseData;
+    }
+
+    private function createFileDataPart(StreamInterface $stream, ?string $filename): DataPart
+    {
+        $fileData = (string) $stream;
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($fileData);
+        if (false === $mimeType) {
+            throw new RuntimeException('Unable to determine the MIME type of the file');
+        }
+
+        return new DataPart($fileData, $filename, $mimeType);
     }
 }

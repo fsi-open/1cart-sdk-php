@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
+use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonSerializable;
 use Money\Money;
@@ -34,6 +35,10 @@ final class ProductVersion implements JsonSerializable
      * @var array<ProductExtension>
      */
     private array $extensions;
+    /**
+     * @var array<ProductImage>
+     */
+    private array $images;
 
     /**
      * @param array<string,mixed> $data
@@ -54,6 +59,7 @@ final class ProductVersion implements JsonSerializable
             FormattedMoney::fromData($data['price'] ?? []),
             $data['tax_rate'],
             self::parseProductProperties($data['properties'] ?? null, $uriFactory),
+            ProductImage::parseInstancesFromResponse($data['images'] ?? [], $uriFactory),
             self::parseProductExtensions($data['extensions'] ?? [])
         );
     }
@@ -64,6 +70,7 @@ final class ProductVersion implements JsonSerializable
      * @param Money $price
      * @param float $tax
      * @param ProductProperties|null $properties
+     * @param array<ProductImage> $images
      * @param array<ProductExtension> $extensions
      */
     public function __construct(
@@ -73,6 +80,7 @@ final class ProductVersion implements JsonSerializable
         Money $price,
         float $tax,
         ?ProductProperties $properties,
+        array $images,
         array $extensions
     ) {
         $this->name = $name;
@@ -81,6 +89,7 @@ final class ProductVersion implements JsonSerializable
         $this->price = $price;
         $this->tax = $tax;
         $this->properties = $properties;
+        $this->images = $images;
         $this->extensions = $extensions;
     }
 
@@ -123,6 +132,14 @@ final class ProductVersion implements JsonSerializable
     }
 
     /**
+     * @return array<ProductImage>
+     */
+    public function getImages(): array
+    {
+        return $this->images;
+    }
+
+    /**
      * @return array<string,mixed>
      */
     public function jsonSerialize(): array
@@ -153,6 +170,12 @@ final class ProductVersion implements JsonSerializable
         switch ($properties['type'] ?? null) {
             case 'digital-uri':
                 return new DigitalUriProperties($uriFactory->createUri($properties['uri']));
+
+            case 'digital-file':
+                return new DigitalFileProperties(
+                    $uriFactory->createUri($properties['uri']),
+                    new DateTimeImmutable($properties['expires_at'])
+                );
 
             case 'physical':
                 return new PhysicalProperties(
