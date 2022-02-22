@@ -159,9 +159,20 @@ class Client
     /**
      * @return Generator<string,Product>
      */
-    public function allProducts(): Generator
+    public function allProducts(?UuidInterface $categoryId = null, ?bool $disabled = null): Generator
     {
-        foreach ($this->sendRequest('GET', 'products/all') as $product) {
+        $queryData = null;
+        if (null !== $categoryId || null !== $disabled) {
+            $queryData = [];
+            if (null !== $categoryId) {
+                $queryData['category'] = $categoryId->toString();
+            }
+            if (null !== $disabled) {
+                $queryData['disabled'] = (int) $disabled;
+            }
+        }
+
+        foreach ($this->sendRequest('GET', 'products/all', null, $queryData) as $product) {
             yield $product['seller_id'] => Product::fromData($product, $this->uriFactory);
         }
     }
