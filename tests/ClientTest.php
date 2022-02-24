@@ -44,6 +44,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 use function count;
@@ -471,6 +472,19 @@ final class ClientTest extends TestCase
         self::assertInstanceOf(Money::class, $price2);
         self::assertEquals('45512', $price2->getAmount());
         self::assertEquals('PLN', $price2->getCurrency());
+    }
+
+    public function testAllProductsFiltering(): void
+    {
+        $categoryId = Uuid::uuid4();
+        $this->mockApiCall("products/all?category={$categoryId->toString()}&disabled=0", 'products.json');
+
+        $products = [];
+        foreach ($this->apiClient->allProducts($categoryId, false) as $sellerId => $product1) {
+            $products[$sellerId] = $product1;
+        }
+
+        self::assertCount(2, $products);
     }
 
     public function testProducts(): void
