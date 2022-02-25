@@ -1,6 +1,7 @@
 [
     {
       "name": "Yellow T-Shirt XXL",
+      "short_description": null,
       "page_uri": "https://example.com/product",
       "image_thumbnail": "https://onecart-public.s3.atman.pl/web-image/05f/61b/def/c0c4dc181ee9c6aefb1b035/product.png",
       "price": {

@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace OneCart\Api\Model\Product;
 
 use OneCart\Api\Model\Dimensions;
-use OneCart\Api\Model\Product\ProductProperties;
 
 final class PhysicalProperties implements ProductProperties
 {
@@ -33,5 +32,14 @@ final class PhysicalProperties implements ProductProperties
     public function getWeight(): float
     {
         return $this->weight;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'type' => 'physical',
+            'dimensions' => $this->dimensions,
+            'weight' => $this->weight,
+        ];
     }
 }

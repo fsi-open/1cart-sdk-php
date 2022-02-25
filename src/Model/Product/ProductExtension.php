@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-interface ProductExtension
+use JsonSerializable;
+
+interface ProductExtension extends JsonSerializable
 {
+    public function getKey(): string;
 }

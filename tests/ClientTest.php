@@ -557,6 +557,7 @@ final class ClientTest extends TestCase
         $expectedRequestData = [
             'seller_id' => 'test',
             'name' => 'Product no 1',
+            'short_description' => null,
             'page_uri' => null,
             'price' => '1000',
             'tax_rate' => 0.23,
@@ -569,7 +570,7 @@ final class ClientTest extends TestCase
         try {
             $this->apiClient->createProduct(
                 'test',
-                new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+                new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
             );
         } catch (ApiException $exception) {
             self::assertEquals(
@@ -588,7 +589,7 @@ final class ClientTest extends TestCase
 
         $product = $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
         self::assertEquals('Yellow T-Shirt XXL', $product->getName());
     }
@@ -599,7 +600,7 @@ final class ClientTest extends TestCase
 
         $product = $this->apiClient->updateProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
         self::assertEquals('Yellow T-Shirt XXL', $product->getName());
     }
@@ -630,7 +631,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         /** @var resource $fileHandle */
@@ -676,7 +677,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         /** @var resource $fileHandle */
@@ -717,7 +718,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         /** @var resource $fileHandle */
@@ -758,7 +759,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         /** @var resource $fileHandle */
@@ -799,7 +800,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         $this->apiClient->moveImage('test', 0);
@@ -838,7 +839,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         $this->apiClient->moveImageInDirection('test', 0, 1);
@@ -877,7 +878,7 @@ final class ClientTest extends TestCase
 
         $this->apiClient->createProduct(
             'test',
-            new ProductVersion('Product no 1', null, null, Money::PLN(1000), 0.23, null, [], [])
+            new ProductVersion('Product no 1', null, null, null, Money::PLN(1000), 0.23, null, [], [])
         );
 
         $this->apiClient->deleteImageAtPosition('test', 0);

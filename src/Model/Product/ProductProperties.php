@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-interface ProductProperties
+use JsonSerializable;
+
+interface ProductProperties extends JsonSerializable
 {
 }

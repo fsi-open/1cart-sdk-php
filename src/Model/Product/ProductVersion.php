@@ -26,6 +26,7 @@ use function array_reduce;
 final class ProductVersion implements JsonSerializable
 {
     private string $name;
+    private ?string $shortDescription;
     private ?UriInterface $pageUri;
     private ?UriInterface $imageThumbnailUri;
     private Money $price;
@@ -35,6 +36,7 @@ final class ProductVersion implements JsonSerializable
      * @var array<ProductExtension>
      */
     private array $extensions;
+
     /**
      * @var array<ProductImage>
      */
@@ -54,6 +56,7 @@ final class ProductVersion implements JsonSerializable
 
         return new self(
             $data['name'],
+            $data['short_description'] ?? null,
             $pageUri,
             $imageThumbnailUri,
             FormattedMoney::fromData($data['price'] ?? []),
@@ -65,6 +68,8 @@ final class ProductVersion implements JsonSerializable
     }
 
     /**
+     * @param string $name
+     * @param string|null $shortDescription
      * @param UriInterface|null $pageUri
      * @param UriInterface|null $imageThumbnailUri
      * @param Money $price
@@ -75,6 +80,7 @@ final class ProductVersion implements JsonSerializable
      */
     public function __construct(
         string $name,
+        ?string $shortDescription,
         ?UriInterface $pageUri,
         ?UriInterface $imageThumbnailUri,
         Money $price,
@@ -84,6 +90,7 @@ final class ProductVersion implements JsonSerializable
         array $extensions
     ) {
         $this->name = $name;
+        $this->shortDescription = $shortDescription;
         $this->pageUri = $pageUri;
         $this->imageThumbnailUri = $imageThumbnailUri;
         $this->price = $price;
@@ -96,6 +103,11 @@ final class ProductVersion implements JsonSerializable
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getShortDescription(): ?string
+    {
+        return $this->shortDescription;
     }
 
     public function getPageUri(): ?UriInterface
@@ -144,14 +156,21 @@ final class ProductVersion implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return [
+        $result = [
             'name' => $this->name,
+            'short_description' => $this->shortDescription,
             'page_uri' => $this->pageUri,
             'price' => $this->price->getAmount(),
             'tax_rate' => $this->tax,
             'properties' => $this->properties,
-            'extensions' => $this->extensions,
+            'extensions' => [],
         ];
+
+        foreach ($this->extensions as $extension) {
+            $result['extensions'][$extension->getKey()] = $extension->jsonSerialize();
+        }
+
+        return $result;
     }
 
     /**

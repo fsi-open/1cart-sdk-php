@@ -36,6 +36,7 @@
         "product": {
           "seller_id": "doniczka-czarna",
           "name": "Doniczka czarna",
+          "short_description": null,
           "page_uri": null,
           "image_thumbnail": "https://onecart-public.s3.atman.pl/web-image/99d/fc6/762/ef14d998a86ff4583abba58/doniczka.jpg",
           "price": {
@@ -70,6 +71,7 @@
         "product": {
           "seller_id": "figurka",
           "name": "Figurka",
+          "short_description": null,
           "page_uri": null,
           "image_thumbnail": "https://onecart-public.s3.atman.pl/web-image/238/ac1/1b3/d114ceaaca3b78c7ae2fe74/figurka.jpg",
           "price": {
@@ -104,6 +106,7 @@
         "product": {
           "seller_id": "budzik",
           "name": "Budzik",
+          "short_description": null,
           "page_uri": null,
           "image_thumbnail": "https://onecart-public.s3.atman.pl/web-image/228/cf8/ff9/e67478396b8a29799981ba6/budzik.jpg",
           "price": {

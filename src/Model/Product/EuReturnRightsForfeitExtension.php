@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-use OneCart\Api\Model\Product\ProductExtension;
-
 final class EuReturnRightsForfeitExtension implements ProductExtension
 {
     private bool $forfeitRequired;
@@ -25,5 +23,17 @@ final class EuReturnRightsForfeitExtension implements ProductExtension
     public function isForfeitRequired(): bool
     {
         return $this->forfeitRequired;
+    }
+
+    public function getKey(): string
+    {
+        return 'eu_return_rights_forfeit';
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'forfeit_required' => $this->forfeitRequired,
+        ];
     }
 }
