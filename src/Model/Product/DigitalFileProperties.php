@@ -34,4 +34,9 @@ final class DigitalFileProperties implements ProductProperties
     {
         return $this->expiresAt;
     }
+
+    public function jsonSerialize()
+    {
+        return null;
+    }
 }

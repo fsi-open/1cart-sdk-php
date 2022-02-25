@@ -11,7 +11,9 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model;
 
-final class Dimensions
+use JsonSerializable;
+
+final class Dimensions implements JsonSerializable
 {
     private int $length;
     private int $width;
@@ -50,5 +52,14 @@ final class Dimensions
     public function getHeight(): int
     {
         return $this->height;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'length' => $this->length,
+            'width' => $this->width,
+            'height' => $this->height,
+        ];
     }
 }

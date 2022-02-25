@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-use OneCart\Api\Model\Product\ProductExtension;
-
 final class PlVatGTUExtension implements ProductExtension
 {
     private ?string $gtuCode;
@@ -25,5 +23,17 @@ final class PlVatGTUExtension implements ProductExtension
     public function getGtuCode(): ?string
     {
         return $this->gtuCode;
+    }
+
+    public function getKey(): string
+    {
+        return 'pl_vat_gtu_code';
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'vat_gtu_code' => $this->gtuCode,
+        ];
     }
 }

@@ -11,9 +11,6 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-use OneCart\Api\Model\Product\EuVatExemption;
-use OneCart\Api\Model\Product\ProductExtension;
-
 final class EuVatExemptionExtension implements ProductExtension
 {
     private string $vatExemption;
@@ -28,5 +25,17 @@ final class EuVatExemptionExtension implements ProductExtension
     public function getVatExemption(): string
     {
         return $this->vatExemption;
+    }
+
+    public function getKey(): string
+    {
+        return 'eu_vat_exemption';
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'vat_exemption' => $this->vatExemption,
+        ];
     }
 }

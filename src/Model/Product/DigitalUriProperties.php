@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace OneCart\Api\Model\Product;
 
-use OneCart\Api\Model\Product\ProductProperties;
 use Psr\Http\Message\UriInterface;
 
 final class DigitalUriProperties implements ProductProperties
@@ -26,5 +25,13 @@ final class DigitalUriProperties implements ProductProperties
     public function getUri(): UriInterface
     {
         return $this->uri;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'type' => 'digital-url',
+            'uri' => $this->uri,
+        ];
     }
 }

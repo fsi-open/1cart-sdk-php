@@ -86,14 +86,14 @@ final class Product
         return $this->shortCodeUri;
     }
 
-    public function getName(): string
-    {
-        return $this->version->getName();
-    }
-
     public function isDisabled(): bool
     {
         return $this->disabled;
+    }
+
+    public function getName(): string
+    {
+        return $this->version->getName();
     }
 
     public function getPageUri(): ?UriInterface
@@ -143,5 +143,10 @@ final class Product
     public function getImages(): array
     {
         return $this->version->getImages();
+    }
+
+    public function getVersion(): ProductVersion
+    {
+        return $this->version;
     }
 }
